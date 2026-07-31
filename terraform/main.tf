@@ -47,7 +47,23 @@ module "storage" {
   region_name = var.region_name
 }
 
-# 5. 컴퓨트 모듈 호출
+# 5. 로그인/회원가입 인증 (독립적, 다른 모듈과 의존관계 없음)
+module "cognito" {
+  source    = "./modules/cognito"
+  providers = { aws = aws.seoul }
+
+  region_name = var.region_name
+}
+
+# 6. 회원 프로필 저장 (독립적, 다른 모듈과 의존관계 없음)
+module "dynamodb" {
+  source    = "./modules/dynamodb"
+  providers = { aws = aws.seoul }
+
+  region_name = var.region_name
+}
+
+# 7. 컴퓨트 모듈 호출
 module "compute" {
   source    = "./modules/compute"
   providers = { aws = aws.seoul }
@@ -59,6 +75,13 @@ module "compute" {
   # ALB 모듈에서 출력된 값 연결
   alb_security_group_id = module.alb.security_group_id
   target_group_arn      = module.alb.target_group_arn
+
+  # Cognito/DynamoDB 모듈에서 출력된 값 연결 (로그인/회원가입 백엔드용)
+  user_pool_id        = module.cognito.user_pool_id
+  user_pool_arn       = module.cognito.user_pool_arn
+  user_pool_client_id = module.cognito.user_pool_client_id
+  dynamodb_table_name = module.dynamodb.table_name
+  dynamodb_table_arn  = module.dynamodb.table_arn
 
   # 기타 변수
   region_name    = var.region_name

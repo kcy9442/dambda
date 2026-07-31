@@ -2,6 +2,12 @@
 .DS_Store
 Thumbs.db
 
+# Node (backend)
+node_modules/
+npm-debug.log*
+.env
+.env.*
+
 # Terraform
 terraform/.terraform/
 terraform/*.tfstate

@@ -35,6 +35,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # 로그인/회원가입 백엔드 API 호출용
+  http: ^1.2.0
+  # 로그인 토큰을 평문 SharedPreferences 대신 안전하게 저장
+  flutter_secure_storage: ^9.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

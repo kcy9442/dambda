@@ -60,23 +60,56 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
-# Lambda 및 AMP 사용을 위한 정책
+# dynamodb_table_arn/user_pool_arn이 빈 문자열이면(us-east-1 pilot light) 해당 statement를
+# 아예 빼야 함 - IAM 정책에 Resource = "" 를 넣으면 apply 시점에 거부당함
+locals {
+  dynamodb_statements = var.dynamodb_table_arn != "" ? [
+    {
+      Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"]
+      Effect   = "Allow"
+      Resource = var.dynamodb_table_arn
+    }
+  ] : []
+
+  cognito_statements = var.user_pool_arn != "" ? [
+    {
+      # 회원가입/로그인/내 정보 조회에 쓰는 Admin* API. GetUser도 액세스 토큰이 아니라
+      # 태스크 역할의 IAM 자격증명으로 SigV4 서명되므로 이 정책이 있어야 통과함
+      Action = [
+        "cognito-idp:AdminCreateUser",
+        "cognito-idp:AdminSetUserPassword",
+        "cognito-idp:AdminDeleteUser",
+        "cognito-idp:AdminInitiateAuth",
+        "cognito-idp:AdminGetUser",
+        "cognito-idp:GetUser",
+      ]
+      Effect   = "Allow"
+      Resource = var.user_pool_arn
+    }
+  ] : []
+}
+
+# Lambda/AMP + 로그인·회원가입 백엔드가 쓰는 DynamoDB/Cognito 권한
 resource "aws_iam_policy" "ecs_task_policy" {
   name = "${var.region_name}-ecs-task-policy"
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Action   = ["lambda:InvokeFunction"]
-        Effect   = "Allow"
-        Resource = "*"
-      },
-      {
-        Action   = ["aps:RemoteWrite"]
-        Effect   = "Allow"
-        Resource = "*"
-      }
-    ]
+    Statement = concat(
+      [
+        {
+          Action   = ["lambda:InvokeFunction"]
+          Effect   = "Allow"
+          Resource = "*"
+        },
+        {
+          Action   = ["aps:RemoteWrite"]
+          Effect   = "Allow"
+          Resource = "*"
+        },
+      ],
+      local.dynamodb_statements,
+      local.cognito_statements,
+    )
   })
 }
 
@@ -85,7 +118,30 @@ resource "aws_iam_role_policy_attachment" "task_permissions" {
   policy_arn = aws_iam_policy.ecs_task_policy.arn
 }
 
-# ECS 작업 정의 (사이드카 제거 및 App만 배치)
+# 백엔드 컨테이너 이미지 저장소 (로그인/회원가입 Express 앱)
+resource "aws_ecr_repository" "backend" {
+  name                 = "${var.region_name}-backend"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+}
+
+resource "aws_ecr_lifecycle_policy" "backend" {
+  repository = aws_ecr_repository.backend.name
+  policy = jsonencode({
+    rules = [{
+      rulePriority = 1
+      description  = "최근 10개 이미지만 보관"
+      selection = {
+        tagStatus   = "any"
+        countType   = "imageCountMoreThan"
+        countNumber = 10
+      }
+      action = { type = "expire" }
+    }]
+  })
+}
+
+# ECS 작업 정의 (로그인/회원가입 Express 백엔드)
 resource "aws_ecs_task_definition" "main" {
   family                   = "${var.region_name}-task"
   network_mode             = "awsvpc"
@@ -97,13 +153,20 @@ resource "aws_ecs_task_definition" "main" {
 
   container_definitions = jsonencode([
     {
-      name    = "app"
-      image   = "node:20-alpine"
-      command = ["node", "-e", "require('http').createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html'});res.end('<h1>Hello from Node.js on Fargate</h1><p>path: '+req.url+'</p>')}).listen(${var.container_port})"]
+      name  = "app"
+      image = "${aws_ecr_repository.backend.repository_url}:latest"
       portMappings = [{
         containerPort = var.container_port
         hostPort      = var.container_port
       }]
+      # 시크릿 없음 - Cognito가 자격증명을 전담하므로 클라이언트 시크릿/DB 비밀번호가 없음
+      environment = [
+        { name = "PORT", value = tostring(var.container_port) },
+        { name = "AWS_REGION", value = var.aws_region },
+        { name = "USER_POOL_ID", value = var.user_pool_id },
+        { name = "USER_POOL_CLIENT_ID", value = var.user_pool_client_id },
+        { name = "DYNAMODB_TABLE_NAME", value = var.dynamodb_table_name },
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {

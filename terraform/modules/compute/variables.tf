@@ -51,3 +51,36 @@ variable "autoscaling_max_capacity" {
   type        = number
   default     = 5
 }
+
+# 로그인/회원가입 백엔드용 (Cognito + DynamoDB). 기본값 빈 문자열 -
+# us-east-1 pilot light(compute_us, desired_count=0)는 아직 자체 Cognito/DynamoDB가 없어서
+# 이 값들을 넘기지 않음. 실제로 DR을 활성화할 때(Phase 7) 미국 리전에도 만들어 넘겨야 함
+variable "user_pool_id" {
+  description = "백엔드가 Admin* API 호출 시 사용할 Cognito User Pool ID"
+  type        = string
+  default     = ""
+}
+
+variable "user_pool_arn" {
+  description = "Cognito User Pool ARN (태스크 역할 IAM 정책 스코프용)"
+  type        = string
+  default     = ""
+}
+
+variable "user_pool_client_id" {
+  description = "Cognito App Client ID"
+  type        = string
+  default     = ""
+}
+
+variable "dynamodb_table_name" {
+  description = "회원 프로필 DynamoDB 테이블 이름"
+  type        = string
+  default     = ""
+}
+
+variable "dynamodb_table_arn" {
+  description = "회원 프로필 DynamoDB 테이블 ARN (태스크 역할 IAM 정책 스코프용)"
+  type        = string
+  default     = ""
+}
