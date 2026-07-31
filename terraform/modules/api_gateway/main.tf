@@ -1,6 +1,15 @@
 resource "aws_apigatewayv2_api" "http_api_gateway" {
   name          = "${var.region_name}-api-gateway"
   protocol_type = "HTTP"
+
+  # S3로 호스팅되는 웹 프론트가 이 API를 크로스오리진으로 호출해야 함.
+  # HTTP API 네이티브 CORS가 OPTIONS 프리플라이트를 ALB/ECS까지 보내지 않고 여기서 바로 처리해줌
+  cors_configuration {
+    allow_origins = var.cors_allowed_origins
+    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_headers = ["content-type", "authorization"]
+    max_age       = 300
+  }
 }
 
 # VPC Link ENI 보안 그룹 (ALB는 이 SG를 소스로만 인바운드를 허용함)

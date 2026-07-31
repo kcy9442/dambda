@@ -21,3 +21,9 @@ output "task_definition_arn" {
   description = "최신 배포된 작업 정의 ARN"
   value       = aws_ecs_task_definition.main.arn
 }
+
+# 백엔드 이미지를 build/push할 때 필요한 ECR 리포지토리 URL
+output "ecr_repository_url" {
+  description = "백엔드 컨테이너 이미지 ECR 리포지토리 URL"
+  value       = aws_ecr_repository.backend.repository_url
+}
