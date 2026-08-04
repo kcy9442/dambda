@@ -146,6 +146,14 @@ resource "aws_iam_policy" "ecs_task_policy" {
           Effect   = "Allow"
           Resource = "*"
         },
+        {
+          # Translate는 리소스 단위 권한 스코핑을 지원 안 해서 항상 "*".
+          # SourceLanguageCode: 'auto'를 쓰면 내부적으로 comprehend:DetectDominantLanguage도
+          # 호출하므로 그 권한도 같이 필요함 (없으면 AccessDeniedException)
+          Action   = ["translate:TranslateText", "comprehend:DetectDominantLanguage"]
+          Effect   = "Allow"
+          Resource = "*"
+        },
       ],
       local.dynamodb_statements,
       local.cognito_statements,
