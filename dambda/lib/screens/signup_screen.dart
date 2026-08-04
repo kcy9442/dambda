@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/countries.dart';
+import '../l10n/app_localizations.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 
@@ -26,9 +27,10 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_countryCode == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('국가를 선택해주세요.')),
+        SnackBar(content: Text(l10n.countryRequiredError)),
       );
       return;
     }
@@ -42,17 +44,18 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authState.lastError ?? '회원가입에 실패했어요.')),
+        SnackBar(content: Text(authState.lastError ?? l10n.signupFailedDefault)),
       );
-    } else if (ok && mounted) {
-      Navigator.of(context).pop();
     }
+    // 성공 시엔 아무것도 안 함 - authState가 notifyListeners()하면 라우터의
+    // redirect가 자동으로 /signup에서 홈으로 보내줌 (router.dart 참고)
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('회원가입')),
+      appBar: AppBar(title: Text(l10n.signupTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -62,9 +65,9 @@ class _SignupScreenState extends State<SignupScreen> {
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: '아이디 (이메일)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.emailLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -72,8 +75,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
-                  labelText: '비밀번호',
-                  helperText: '8자 이상, 대소문자와 숫자를 포함해주세요.',
+                  labelText: l10n.passwordLabel,
+                  helperText: l10n.passwordHelper,
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -86,17 +89,17 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: _nicknameController,
-                decoration: const InputDecoration(
-                  labelText: '닉네임',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.nicknameLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _countryCode,
-                decoration: const InputDecoration(
-                  labelText: '국가',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.countryLabel,
+                  border: const OutlineInputBorder(),
                 ),
                 items: [
                   for (final country in countries)
@@ -125,7 +128,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('가입하기'),
+                          : Text(l10n.signupButton),
                     ),
                   );
                 },

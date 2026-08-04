@@ -87,20 +87,60 @@ locals {
       Resource = var.user_pool_arn
     }
   ] : []
+
+  product_likes_statements = var.product_likes_table_arn != "" ? [
+    {
+      Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+      Effect   = "Allow"
+      Resource = var.product_likes_table_arn
+    }
+  ] : []
+
+  product_reviews_statements = var.product_reviews_table_arn != "" ? [
+    {
+      Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+      Effect = "Allow"
+      # product-reviews-by-product GSI에 Query를 날리므로 base table ARN만으로는 부족
+      Resource = [var.product_reviews_table_arn, "${var.product_reviews_table_arn}/index/*"]
+    }
+  ] : []
+
+  review_photos_statements = var.review_photos_bucket_arn != "" ? [
+    {
+      Action   = ["s3:PutObject", "s3:DeleteObject"]
+      Effect   = "Allow"
+      Resource = "${var.review_photos_bucket_arn}/*"
+    }
+  ] : []
+
+  # 검열 Lambda 호출 권한. 원래 lambda:InvokeFunction이 Resource="*"인 플레이스홀더로 남아있었는데
+  # (아직 실제 소비자가 없어서), 이번에 처음으로 실사용처가 생겨서 이 특정 Lambda ARN으로 좁힘
+  moderation_lambda_statements = var.moderation_lambda_arn != "" ? [
+    {
+      Action   = ["lambda:InvokeFunction"]
+      Effect   = "Allow"
+      Resource = var.moderation_lambda_arn
+    }
+  ] : []
+
+  # 상품 카탈로그는 백엔드가 읽기만 함 - 쓰기(시딩)는 개발자가 seed 스크립트를
+  # 직접 자기 자격증명으로 실행하므로 태스크 역할에는 Put/Delete를 주지 않음
+  product_catalog_statements = var.product_catalog_table_arn != "" ? [
+    {
+      Action   = ["dynamodb:GetItem", "dynamodb:Scan"]
+      Effect   = "Allow"
+      Resource = var.product_catalog_table_arn
+    }
+  ] : []
 }
 
-# Lambda/AMP + 로그인·회원가입 백엔드가 쓰는 DynamoDB/Cognito 권한
+# AMP + 로그인·회원가입/좋아요/리뷰 백엔드가 쓰는 DynamoDB/Cognito/S3/Lambda 권한
 resource "aws_iam_policy" "ecs_task_policy" {
   name = "${var.region_name}-ecs-task-policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = concat(
       [
-        {
-          Action   = ["lambda:InvokeFunction"]
-          Effect   = "Allow"
-          Resource = "*"
-        },
         {
           Action   = ["aps:RemoteWrite"]
           Effect   = "Allow"
@@ -109,6 +149,11 @@ resource "aws_iam_policy" "ecs_task_policy" {
       ],
       local.dynamodb_statements,
       local.cognito_statements,
+      local.product_likes_statements,
+      local.product_reviews_statements,
+      local.review_photos_statements,
+      local.moderation_lambda_statements,
+      local.product_catalog_statements,
     )
   })
 }
@@ -166,6 +211,12 @@ resource "aws_ecs_task_definition" "main" {
         { name = "USER_POOL_ID", value = var.user_pool_id },
         { name = "USER_POOL_CLIENT_ID", value = var.user_pool_client_id },
         { name = "DYNAMODB_TABLE_NAME", value = var.dynamodb_table_name },
+        { name = "PRODUCT_LIKES_TABLE_NAME", value = var.product_likes_table_name },
+        { name = "PRODUCT_REVIEWS_TABLE_NAME", value = var.product_reviews_table_name },
+        { name = "S3_REVIEW_PHOTOS_BUCKET", value = var.review_photos_bucket_name },
+        { name = "S3_REVIEW_PHOTOS_DOMAIN", value = var.review_photos_bucket_domain },
+        { name = "MODERATION_LAMBDA_NAME", value = var.moderation_lambda_name },
+        { name = "PRODUCT_CATALOG_TABLE_NAME", value = var.product_catalog_table_name },
       ]
       logConfiguration = {
         logDriver = "awslogs"

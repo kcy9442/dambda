@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../data/countries.dart';
+import '../l10n/app_localizations.dart';
 import '../state/app_state.dart';
 import '../state/auth_state.dart';
+import '../state/locale_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dambda_app_bar.dart';
 
@@ -13,8 +15,52 @@ class MyScreen extends StatelessWidget {
     return match.isEmpty ? code : match.first.nameKo;
   }
 
+  Future<void> _showLanguagePicker(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  l10n.languagePickerTitle,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ),
+              ListTile(
+                title: const Text('한국어'),
+                trailing: localeState.locale?.languageCode == 'ko'
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  localeState.setLocale(const Locale('ko'));
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                title: const Text('English'),
+                trailing: localeState.locale?.languageCode == 'en'
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  localeState.setLocale(const Locale('en'));
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: const DambdaAppBar(),
       body: ListenableBuilder(
@@ -40,14 +86,14 @@ class MyScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        profile?.nickname ?? 'Guest Traveler',
+                        profile?.nickname ?? l10n.guestName,
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         profile != null
                             ? '${_countryName(profile.country)} · ${profile.email}'
-                            : '둘러본 아이템을 담다에서 정리해보세요',
+                            : l10n.guestSubtitle,
                         style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                       ),
                     ],
@@ -59,14 +105,14 @@ class MyScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _StatCard(
-                      label: '좋아요',
+                      label: l10n.statLikes,
                       value: '${appState.likedProducts.length}',
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _StatCard(
-                      label: '둘러본 아이템',
+                      label: l10n.statBrowsed,
                       value: '${appState.products.length}',
                     ),
                   ),
@@ -74,13 +120,17 @@ class MyScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               const Divider(),
-              const _MenuRow(icon: Icons.language, label: '언어 설정 · Language'),
-              const _MenuRow(icon: Icons.receipt_long, label: '주문 내역'),
-              const _MenuRow(icon: Icons.help_outline, label: '고객센터'),
-              const _MenuRow(icon: Icons.info_outline, label: '앱 정보'),
+              _MenuRow(
+                icon: Icons.language,
+                label: l10n.menuLanguage,
+                onTap: () => _showLanguagePicker(context),
+              ),
+              _MenuRow(icon: Icons.receipt_long, label: l10n.menuOrders),
+              _MenuRow(icon: Icons.help_outline, label: l10n.menuSupport),
+              _MenuRow(icon: Icons.info_outline, label: l10n.menuAbout),
               _MenuRow(
                 icon: Icons.logout,
-                label: '로그아웃',
+                label: l10n.menuLogout,
                 onTap: authState.logout,
               ),
             ],

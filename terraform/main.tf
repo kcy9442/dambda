@@ -63,7 +63,16 @@ module "dynamodb" {
   region_name = var.region_name
 }
 
-# 7. 컴퓨트 모듈 호출
+# 7. 리뷰 사진 검열 Lambda (리뷰 사진 버킷에 의존)
+module "lambda_moderation" {
+  source    = "./modules/lambda_moderation"
+  providers = { aws = aws.seoul }
+
+  region_name              = var.region_name
+  review_photos_bucket_arn = module.storage.review_photos_bucket_arn
+}
+
+# 8. 컴퓨트 모듈 호출
 module "compute" {
   source    = "./modules/compute"
   providers = { aws = aws.seoul }
@@ -76,12 +85,28 @@ module "compute" {
   alb_security_group_id = module.alb.security_group_id
   target_group_arn      = module.alb.target_group_arn
 
-  # Cognito/DynamoDB 모듈에서 출력된 값 연결 (로그인/회원가입 백엔드용)
+  # Cognito/DynamoDB 모듈에서 출력된 값 연결 (로그인/회원가입 + 상품 좋아요/리뷰 백엔드용)
   user_pool_id        = module.cognito.user_pool_id
   user_pool_arn       = module.cognito.user_pool_arn
   user_pool_client_id = module.cognito.user_pool_client_id
   dynamodb_table_name = module.dynamodb.table_name
   dynamodb_table_arn  = module.dynamodb.table_arn
+
+  product_likes_table_name = module.dynamodb.product_likes_table_name
+  product_likes_table_arn  = module.dynamodb.product_likes_table_arn
+
+  product_reviews_table_name = module.dynamodb.product_reviews_table_name
+  product_reviews_table_arn  = module.dynamodb.product_reviews_table_arn
+
+  product_catalog_table_name = module.dynamodb.product_catalog_table_name
+  product_catalog_table_arn  = module.dynamodb.product_catalog_table_arn
+
+  review_photos_bucket_name   = module.storage.review_photos_bucket_name
+  review_photos_bucket_arn    = module.storage.review_photos_bucket_arn
+  review_photos_bucket_domain = module.storage.review_photos_bucket_regional_domain
+
+  moderation_lambda_arn  = module.lambda_moderation.lambda_arn
+  moderation_lambda_name = module.lambda_moderation.lambda_name
 
   # 기타 변수
   region_name    = var.region_name

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../theme/app_theme.dart';
 
 class ProductThumb extends StatelessWidget {
   final Product product;
@@ -15,22 +16,33 @@ class ProductThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = product.imageUrl;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: imageUrl == null
+            ? const _ThumbFallback()
+            : Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const _ThumbFallback(),
+              ),
+      ),
+    );
+  }
+}
+
+class _ThumbFallback extends StatelessWidget {
+  const _ThumbFallback();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        gradient: LinearGradient(
-          colors: product.gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      color: AppColors.surface,
       alignment: Alignment.center,
-      child: Text(
-        product.emoji,
-        style: TextStyle(fontSize: size * 0.42),
-      ),
+      child: const Icon(Icons.shopping_bag_outlined, color: AppColors.textSecondary),
     );
   }
 }

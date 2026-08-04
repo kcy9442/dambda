@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config.dart';
+import 'api_exception.dart';
+import 'http_timeout.dart';
+
+export 'api_exception.dart';
 
 class AuthTokens {
   final String accessToken;
@@ -22,16 +26,6 @@ class AuthTokens {
   }
 }
 
-class ApiException implements Exception {
-  final int statusCode;
-  final String message;
-
-  const ApiException(this.statusCode, this.message);
-
-  @override
-  String toString() => message;
-}
-
 class AuthService {
   Uri _uri(String path) => Uri.parse('$apiBaseUrl$path');
 
@@ -41,27 +35,31 @@ class AuthService {
     required String nickname,
     required String country,
   }) async {
-    final response = await http.post(
-      _uri('/auth/signup'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-        'nickname': nickname,
-        'country': country,
-      }),
-    );
+    final response = await http
+        .post(
+          _uri('/auth/signup'),
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email,
+            'password': password,
+            'nickname': nickname,
+            'country': country,
+          }),
+        )
+        .timeout(requestTimeout, onTimeout: timeoutError);
     if (response.statusCode != 201) {
       throw ApiException(response.statusCode, _errorMessage(response));
     }
   }
 
   Future<AuthTokens> login({required String email, required String password}) async {
-    final response = await http.post(
-      _uri('/auth/login'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
+    final response = await http
+        .post(
+          _uri('/auth/login'),
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email, 'password': password}),
+        )
+        .timeout(requestTimeout, onTimeout: timeoutError);
     if (response.statusCode != 200) {
       throw ApiException(response.statusCode, _errorMessage(response));
     }
@@ -69,10 +67,12 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> me(String accessToken) async {
-    final response = await http.get(
-      _uri('/auth/me'),
-      headers: {'Authorization': 'Bearer $accessToken'},
-    );
+    final response = await http
+        .get(
+          _uri('/auth/me'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        )
+        .timeout(requestTimeout, onTimeout: timeoutError);
     if (response.statusCode != 200) {
       throw ApiException(response.statusCode, _errorMessage(response));
     }

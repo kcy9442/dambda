@@ -84,3 +84,62 @@ variable "dynamodb_table_arn" {
   type        = string
   default     = ""
 }
+
+# 상품 좋아요용 (기본값 빈 문자열 - us-east-1 pilot light는 아직 미지원)
+variable "product_likes_table_name" {
+  type    = string
+  default = ""
+}
+
+variable "product_likes_table_arn" {
+  type    = string
+  default = ""
+}
+
+# 상품 리뷰 + 리뷰 사진 + 검열 Lambda용 (기본값 빈 문자열 - us-east-1 pilot light는 아직 미지원)
+variable "product_reviews_table_name" {
+  type    = string
+  default = ""
+}
+
+variable "product_reviews_table_arn" {
+  type    = string
+  default = ""
+}
+
+variable "review_photos_bucket_name" {
+  type    = string
+  default = ""
+}
+
+variable "review_photos_bucket_arn" {
+  type    = string
+  default = ""
+}
+
+variable "review_photos_bucket_domain" {
+  description = "리뷰 사진 공개 URL 조립용 (https://<domain>/<key>)"
+  type        = string
+  default     = ""
+}
+
+variable "moderation_lambda_arn" {
+  type    = string
+  default = ""
+}
+
+variable "moderation_lambda_name" {
+  type    = string
+  default = ""
+}
+
+# 상품 카탈로그용 (기본값 빈 문자열 - us-east-1 pilot light는 아직 미지원)
+variable "product_catalog_table_name" {
+  type    = string
+  default = ""
+}
+
+variable "product_catalog_table_arn" {
+  type    = string
+  default = ""
+}

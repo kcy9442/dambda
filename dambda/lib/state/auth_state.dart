@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
+import 'app_state.dart';
 
 const _accessTokenKey = 'dambda_access_token';
 
@@ -16,6 +19,7 @@ class AuthState extends ChangeNotifier {
   String? lastError;
 
   bool get isLoggedIn => _accessToken != null && profile != null;
+  String? get accessToken => _accessToken;
 
   // flutter_secure_storage(웹)는 브라우저 Web Crypto API를 쓰는데 이게 HTTPS/localhost
   // 같은 "secure context"에서만 동작함. 지금 S3 정적 호스팅은 HTTP라 여기서 예외가 남 -
@@ -114,11 +118,15 @@ class AuthState extends ChangeNotifier {
     final json = await _authService.me(_accessToken!);
     profile = UserProfile.fromJson(json);
     notifyListeners();
+    // 로그인/세션 복구 시점에 좋아요 목록을 한 번에 받아와서 채워둠 -
+    // 상품 카드마다 좋아요 여부를 개별 조회하지 않게 하는 핵심 장치
+    unawaited(appState.loadMyLikes(_accessToken!));
   }
 
   Future<void> _clearSession() async {
     _accessToken = null;
     profile = null;
+    appState.clearLikes();
     await _deleteToken();
   }
 }

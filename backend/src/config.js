@@ -4,4 +4,10 @@ module.exports = {
   userPoolId: process.env.USER_POOL_ID,
   userPoolClientId: process.env.USER_POOL_CLIENT_ID,
   dynamodbTableName: process.env.DYNAMODB_TABLE_NAME,
+  productLikesTableName: process.env.PRODUCT_LIKES_TABLE_NAME,
+  productReviewsTableName: process.env.PRODUCT_REVIEWS_TABLE_NAME,
+  productCatalogTableName: process.env.PRODUCT_CATALOG_TABLE_NAME,
+  reviewPhotosBucket: process.env.S3_REVIEW_PHOTOS_BUCKET,
+  reviewPhotosDomain: process.env.S3_REVIEW_PHOTOS_DOMAIN,
+  moderationLambdaName: process.env.MODERATION_LAMBDA_NAME,
 };

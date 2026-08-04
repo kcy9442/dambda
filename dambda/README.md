@@ -33,8 +33,15 @@ lib/
 
 ```bash
 flutter pub get
-flutter run -d chrome     # 웹으로 실행
-flutter run -d windows    # 데스크톱으로 실행
+flutter run -d chrome --dart-define=API_BASE_URL=https://<배포된-API-Gateway-주소>
+flutter run -d windows --dart-define=API_BASE_URL=https://<배포된-API-Gateway-주소>
+```
+
+`--dart-define=API_BASE_URL=...`을 빼면 앱이 존재하지 않는 `http://localhost:8080`으로 로그인 요청을 보내다가 **로그인/회원가입 버튼이 무한 로딩처럼 멈춰요.** 실제 주소는 terraform 폴더에서 아래로 확인:
+
+```bash
+cd ../terraform
+terraform output api_gateway_endpoint
 ```
 
 ## 테스트 / 정적 분석

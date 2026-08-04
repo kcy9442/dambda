@@ -1,36 +1,34 @@
-import 'package:flutter/material.dart';
-
-class Comment {
-  final String author;
-  final String text;
-
-  const Comment({required this.author, required this.text});
-}
-
 class Product {
   final String id;
-  final String nameKo;
-  final String nameEn;
+  final String name;
   final int price;
   final String store;
   final String category;
-  final String emoji;
-  final List<Color> gradient;
-  final bool touristPick;
-  final List<Comment> comments;
+  final String? reason;
+  final String? discountInfo;
+  final String? imageUrl;
 
   const Product({
     required this.id,
-    required this.nameKo,
-    required this.nameEn,
+    required this.name,
     required this.price,
     required this.store,
     required this.category,
-    required this.emoji,
-    required this.gradient,
-    this.touristPick = false,
-    this.comments = const [],
+    this.reason,
+    this.discountInfo,
+    this.imageUrl,
   });
+
+  factory Product.fromJson(Map<String, dynamic> json) => Product(
+    id: json['itemId'] as String,
+    name: json['name'] as String,
+    price: json['price'] as int,
+    store: json['store'] as String,
+    category: json['category'] as String,
+    reason: json['reason'] as String?,
+    discountInfo: json['discountInfo'] as String?,
+    imageUrl: json['imageUrl'] as String?,
+  );
 
   String get priceLabel {
     final text = price.toString().replaceAllMapped(

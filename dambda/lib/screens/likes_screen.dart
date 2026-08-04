@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations.dart';
 import '../state/app_state.dart';
+import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dambda_app_bar.dart';
 import '../widgets/product_grid_tile.dart';
-import 'product_detail_screen.dart';
 
 class LikesScreen extends StatelessWidget {
   const LikesScreen({super.key});
@@ -33,12 +35,8 @@ class LikesScreen extends StatelessWidget {
               return ProductGridTile(
                 product: product,
                 liked: true,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ProductDetailScreen(product: product),
-                  ),
-                ),
-                onLikeTap: () => appState.toggleLike(product.id),
+                onTap: () => context.push('product/${product.id}'),
+                onLikeTap: () => appState.toggleLike(product.id, authState.accessToken),
               );
             },
           );
@@ -53,15 +51,15 @@ class _EmptyLikes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('🤍', style: TextStyle(fontSize: 40)),
-          SizedBox(height: 12),
+          const Text('🤍', style: TextStyle(fontSize: 40)),
+          const SizedBox(height: 12),
           Text(
-            '아직 좋아요한 아이템이 없어요',
-            style: TextStyle(
+            AppLocalizations.of(context)!.likesEmpty,
+            style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,

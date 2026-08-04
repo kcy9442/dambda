@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
-import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,19 +24,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     final ok = await authState.login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authState.lastError ?? '로그인에 실패했어요.')),
+        SnackBar(content: Text(authState.lastError ?? l10n.loginFailedDefault)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -59,9 +62,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: '아이디 (이메일)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.emailLabel,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -70,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: _obscurePassword,
                   onSubmitted: (_) => authState.isLoading ? null : _submit(),
                   decoration: InputDecoration(
-                    labelText: '비밀번호',
+                    labelText: l10n.passwordLabel,
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -101,19 +104,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('로그인'),
+                            : Text(l10n.loginButton),
                       ),
                     );
                   },
                 ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SignupScreen()),
-                  ),
-                  child: const Text(
-                    '아직 계정이 없으신가요? 회원가입',
-                    style: TextStyle(color: AppColors.textSecondary),
+                  onPressed: () => context.push('/signup'),
+                  child: Text(
+                    l10n.noAccountSignupPrompt,
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
               ],

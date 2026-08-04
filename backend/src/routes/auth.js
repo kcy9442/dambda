@@ -2,10 +2,11 @@ const express = require('express');
 const cognito = require('../services/cognito');
 const dynamodb = require('../services/dynamodb');
 const authenticate = require('../middleware/authenticate');
+const asyncHandler = require('../middleware/asyncHandler');
 
 const router = express.Router();
 
-router.post('/signup', async (req, res) => {
+router.post('/signup', asyncHandler(async (req, res) => {
   const { email, password, nickname, country } = req.body || {};
   if (!email || !password || !nickname || !country) {
     return res.status(400).json({ error: 'email, password, nickname, country are all required' });
@@ -41,9 +42,9 @@ router.post('/signup', async (req, res) => {
   }
 
   res.status(201).json({ userId: sub, email, nickname, country });
-});
+}));
 
-router.post('/login', async (req, res) => {
+router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: 'email and password are required' });
@@ -56,14 +57,14 @@ router.post('/login', async (req, res) => {
     // 이메일이 없는지 비번이 틀렸는지 구분해서 알려주지 않음 (계정 존재 여부 노출 방지)
     res.status(401).json({ error: 'invalid email or password' });
   }
-});
+}));
 
-router.get('/me', authenticate, async (req, res) => {
+router.get('/me', authenticate, asyncHandler(async (req, res) => {
   const profile = await dynamodb.getProfile(req.user.sub);
   if (!profile) {
     return res.status(404).json({ error: 'profile not found' });
   }
   res.status(200).json(profile);
-});
+}));
 
 module.exports = router;

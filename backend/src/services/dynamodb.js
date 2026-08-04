@@ -1,8 +1,6 @@
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const config = require('../config');
-
-const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: config.awsRegion }));
+const client = require('./dynamoClient');
 
 async function putProfile(profile) {
   await client.send(
