@@ -6,7 +6,13 @@ import 'api_exception.dart';
 import 'http_timeout.dart';
 
 class ProductService {
-  Uri _uri(String path) => Uri.parse('$apiBaseUrl$path');
+  Uri _uri(String path) {
+    final base = apiBaseUrl.endsWith('/')
+        ? apiBaseUrl.substring(0, apiBaseUrl.length - 1)
+        : apiBaseUrl;
+    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    return Uri.parse('$base$normalizedPath');
+  }
 
   Future<List<Product>> list() async {
     final response = await http
@@ -17,6 +23,8 @@ class ProductService {
     }
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     final items = body['products'] as List;
-    return items.map((json) => Product.fromJson(json as Map<String, dynamic>)).toList();
+    return items
+        .map((json) => Product.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 }

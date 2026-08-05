@@ -5,10 +5,13 @@ const {
   AdminDeleteUserCommand,
   AdminInitiateAuthCommand,
   GetUserCommand,
+  ForgotPasswordCommand,
+  ConfirmForgotPasswordCommand,
+  AdminListGroupsForUserCommand,
 } = require('@aws-sdk/client-cognito-identity-provider');
 const config = require('../config');
 
-const client = new CognitoIdentityProviderClient({ region: config.awsRegion });
+const client = new CognitoIdentityProviderClient({ region: config.resourceRegion });
 
 function attr(attributes, name) {
   const found = (attributes || []).find((a) => a.Name === name);
@@ -74,9 +77,44 @@ async function login(email, password) {
 async function getUserByAccessToken(accessToken) {
   const result = await client.send(new GetUserCommand({ AccessToken: accessToken }));
   return {
+    username: result.Username,
     sub: attr(result.UserAttributes, 'sub'),
     email: attr(result.UserAttributes, 'email'),
+    name: attr(result.UserAttributes, 'name'),
   };
 }
 
-module.exports = { createUser, setPassword, deleteUser, login, getUserByAccessToken };
+async function forgotPassword(email) {
+  await client.send(new ForgotPasswordCommand({
+    ClientId: config.userPoolClientId,
+    Username: email,
+  }));
+}
+
+async function confirmForgotPassword(email, code, newPassword) {
+  await client.send(new ConfirmForgotPasswordCommand({
+    ClientId: config.userPoolClientId,
+    Username: email,
+    ConfirmationCode: code,
+    Password: newPassword,
+  }));
+}
+
+async function isAdmin(username) {
+  const result = await client.send(new AdminListGroupsForUserCommand({
+    UserPoolId: config.userPoolId,
+    Username: username,
+  }));
+  return (result.Groups || []).some((group) => group.GroupName === 'admins');
+}
+
+module.exports = {
+  createUser,
+  setPassword,
+  deleteUser,
+  login,
+  getUserByAccessToken,
+  forgotPassword,
+  confirmForgotPassword,
+  isAdmin,
+};

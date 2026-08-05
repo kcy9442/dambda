@@ -4,8 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { TranslateClient, TranslateTextCommand } = require('@aws-sdk/client-translate');
 
 const TABLE_NAME = process.env.PRODUCT_CATALOG_TABLE_NAME;
+const AWS_REGION = process.env.AWS_REGION || 'ap-northeast-2';
+const TERMINOLOGY_NAME = process.env.TRANSLATE_TERMINOLOGY_NAME;
+const TARGET_LANGUAGES = ['en', 'ja', 'zh'];
+const TRANSLATED_FIELDS = ['name', 'reason', 'store', 'discountInfo'];
 const ITEMS_JSON_PATH = path.join(__dirname, '..', '..', 'json', 'items.json');
 
 if (!TABLE_NAME) {
@@ -28,7 +33,34 @@ async function main() {
   const raw = fs.readFileSync(ITEMS_JSON_PATH, 'utf8');
   const items = parseConcatenatedArrays(raw);
 
-  const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+  const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: AWS_REGION }));
+  const translate = new TranslateClient({ region: AWS_REGION });
+  const translationCache = new Map();
+
+  async function translateText(text, targetLanguage) {
+    if (!text || !String(text).trim()) return null;
+    const cacheKey = `${targetLanguage}:${text}`;
+    if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
+    const request = translate.send(new TranslateTextCommand({
+      Text: String(text),
+      SourceLanguageCode: 'ko',
+      TargetLanguageCode: targetLanguage,
+      ...(TERMINOLOGY_NAME ? { TerminologyNames: [TERMINOLOGY_NAME] } : {}),
+    })).then((result) => result.TranslatedText);
+    translationCache.set(cacheKey, request);
+    return request;
+  }
+
+  async function buildTranslations(item) {
+    const languageEntries = await Promise.all(TARGET_LANGUAGES.map(async (language) => {
+      const fieldEntries = await Promise.all(TRANSLATED_FIELDS.map(async (field) => {
+        const translated = await translateText(item[field], language);
+        return translated ? [field, translated] : null;
+      }));
+      return [language, Object.fromEntries(fieldEntries.filter(Boolean))];
+    }));
+    return Object.fromEntries(languageEntries);
+  }
 
   for (const item of items) {
     const record = {
@@ -39,11 +71,13 @@ async function main() {
       store: item.store,
       reason: item.reason,
       imageUrl: item.imageUrl,
+      translations: await buildTranslations(item),
+      translatedAt: new Date().toISOString(),
     };
     if (item.discountInfo) record.discountInfo = item.discountInfo;
 
     await client.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
-    console.log(`seeded ${record.itemId}`);
+    console.log(`seeded and translated ${record.itemId}`);
   }
 
   console.log(`done - ${items.length} products written to ${TABLE_NAME}`);

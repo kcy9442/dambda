@@ -58,10 +58,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signupButton => 'Sign Up';
 
   @override
+  String signupSuccessMessage(String nickname) {
+    return 'Welcome, $nickname. Please log in with your new account.';
+  }
+
+  @override
   String get retryButton => 'Retry';
 
   @override
   String get productNotFound => 'Product not found.';
+
+  @override
+  String get storeLabel => 'Where to buy';
 
   @override
   String get homeBannerTitle => 'If you\'re visiting Korea, don\'t miss these';

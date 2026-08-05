@@ -50,14 +50,18 @@ class ProductGridTile extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            product.name,
+            product.localizedName(
+              Localizations.localeOf(context).languageCode,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 2),
           Text(
-            product.priceLabel,
+            product.localizedPriceLabel(
+              Localizations.localeOf(context).languageCode,
+            ),
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,

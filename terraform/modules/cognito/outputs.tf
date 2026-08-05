@@ -12,3 +12,13 @@ output "user_pool_client_id" {
   description = "백엔드가 Admin* API 호출 시 사용할 App Client ID"
   value       = aws_cognito_user_pool_client.app_client.id
 }
+
+output "oauth_domain" {
+  description = "Cognito OAuth/Managed Login domain"
+  value       = "https://${aws_cognito_user_pool_domain.login.domain}.auth.ap-northeast-2.amazoncognito.com"
+}
+
+output "social_provider_callback_url" {
+  description = "Google/Facebook 개발자 콘솔에 등록할 OAuth redirect URI"
+  value       = "https://${aws_cognito_user_pool_domain.login.domain}.auth.ap-northeast-2.amazoncognito.com/oauth2/idpresponse"
+}

@@ -5,13 +5,15 @@
   "description": "DAMBDA backend (Cognito auth, DynamoDB, S3, Lambda moderation)",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "seed:products": "node scripts/seed-products.js"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.658.0",
     "@aws-sdk/client-dynamodb": "^3.658.0",
     "@aws-sdk/client-lambda": "^3.658.0",
     "@aws-sdk/client-s3": "^3.658.0",
+    "@aws-sdk/client-translate": "^3.658.0",
     "@aws-sdk/lib-dynamodb": "^3.658.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",

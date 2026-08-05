@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
+import 'language_menu.dart';
 
 class DambdaAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
@@ -10,17 +12,26 @@ class DambdaAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       titleSpacing: 20,
-      title: const Text(
-        'DAMBDA',
-        style: TextStyle(
-          color: AppColors.primary,
-          fontSize: 26,
-          fontWeight: FontWeight.w900,
-          letterSpacing: -0.5,
+      title: InkWell(
+        onTap: () => context.go('/'),
+        borderRadius: BorderRadius.circular(8),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Text(
+            'DAMBDA',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
+          ),
         ),
       ),
-      actions: actions ??
+      actions:
+          actions ??
           [
+            const LanguageMenu(),
             IconButton(
               onPressed: () {},
               icon: const Icon(Icons.search, color: AppColors.textPrimary),

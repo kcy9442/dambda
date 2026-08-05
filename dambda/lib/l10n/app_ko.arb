@@ -19,9 +19,14 @@
   "countryRequiredError": "국가를 선택해주세요.",
   "signupFailedDefault": "회원가입에 실패했어요.",
   "signupButton": "가입하기",
+  "signupSuccessMessage": "{nickname} 님 환영합니다. 가입한 계정으로 로그인해주세요.",
+  "@signupSuccessMessage": {
+    "placeholders": { "nickname": { "type": "String" } }
+  },
 
   "retryButton": "다시 시도",
   "productNotFound": "상품을 찾을 수 없어요.",
+  "storeLabel": "파는 곳",
 
   "homeBannerTitle": "한국에 오셨다면, 이건 꼭 담아가세요",
   "homeBannerSubtitle": "여행자들이 인정한 간식과 기념품",

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../data/countries.dart';
 import '../l10n/app_localizations.dart';
 import '../state/app_state.dart';
@@ -28,12 +29,15 @@ class MyScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   l10n.languagePickerTitle,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               ListTile(
                 title: const Text('한국어'),
-                trailing: localeState.locale?.languageCode == 'ko'
+                trailing: localeState.locale.languageCode == 'ko'
                     ? const Icon(Icons.check, color: AppColors.primary)
                     : null,
                 onTap: () {
@@ -43,11 +47,31 @@ class MyScreen extends StatelessWidget {
               ),
               ListTile(
                 title: const Text('English'),
-                trailing: localeState.locale?.languageCode == 'en'
+                trailing: localeState.locale.languageCode == 'en'
                     ? const Icon(Icons.check, color: AppColors.primary)
                     : null,
                 onTap: () {
                   localeState.setLocale(const Locale('en'));
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                title: const Text('日本語'),
+                trailing: localeState.locale.languageCode == 'ja'
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  localeState.setLocale(const Locale('ja'));
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                title: const Text('简体中文'),
+                trailing: localeState.locale.languageCode == 'zh'
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  localeState.setLocale(const Locale('zh'));
                   Navigator.of(context).pop();
                 },
               ),
@@ -87,14 +111,20 @@ class MyScreen extends StatelessWidget {
                     children: [
                       Text(
                         profile?.nickname ?? l10n.guestName,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         profile != null
                             ? '${_countryName(profile.country)} · ${profile.email}'
                             : l10n.guestSubtitle,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -128,6 +158,11 @@ class MyScreen extends StatelessWidget {
               _MenuRow(icon: Icons.receipt_long, label: l10n.menuOrders),
               _MenuRow(icon: Icons.help_outline, label: l10n.menuSupport),
               _MenuRow(icon: Icons.info_outline, label: l10n.menuAbout),
+              _MenuRow(
+                icon: Icons.admin_panel_settings_outlined,
+                label: '관리자 페이지',
+                onTap: () => context.go('/admin'),
+              ),
               _MenuRow(
                 icon: Icons.logout,
                 label: l10n.menuLogout,
@@ -165,7 +200,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

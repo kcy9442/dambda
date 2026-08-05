@@ -105,6 +105,10 @@ module "compute" {
   review_photos_bucket_arn    = module.storage.review_photos_bucket_arn
   review_photos_bucket_domain = module.storage.review_photos_bucket_regional_domain
 
+  product_images_bucket_name   = module.storage.product_images_bucket_name
+  product_images_bucket_arn    = module.storage.product_images_bucket_arn
+  product_images_bucket_domain = module.storage.product_images_bucket_domain
+
   moderation_lambda_arn  = module.lambda_moderation.lambda_arn
   moderation_lambda_name = module.lambda_moderation.lambda_name
 
@@ -112,4 +116,9 @@ module "compute" {
   region_name    = var.region_name
   aws_region     = var.aws_region
   container_port = var.container_port
+
+  # 개발 환경은 태스크 1개로 시작하고 최대 2개까지만 자동 확장한다.
+  desired_count            = 1
+  autoscaling_min_capacity = 1
+  autoscaling_max_capacity = 2
 }

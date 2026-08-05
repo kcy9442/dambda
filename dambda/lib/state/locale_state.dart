@@ -4,10 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _prefsKey = 'app_locale';
 
 class LocaleState extends ChangeNotifier {
-  // null이면 기기 로케일을 따라가되 지원하지 않는 언어면 ko로 자동 폴백됨
-  // (MaterialApp.locale이 null일 때의 기본 동작). 값이 있으면 사용자가 마이 화면에서
-  // 명시적으로 고른 것.
-  Locale? locale;
+  // 첫 방문은 브라우저 언어와 관계없이 한국어로 시작한다. 이후에는 사용자가
+  // Language 메뉴에서 고른 값을 저장해 다음 방문에도 유지한다.
+  Locale locale = const Locale('ko');
 
   Future<void> loadSaved() async {
     final prefs = await SharedPreferences.getInstance();

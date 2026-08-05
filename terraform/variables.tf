@@ -36,35 +36,34 @@ variable "container_port" {
   default     = 80
 }
 
-# ===================== 미국(us-east-1) 리전 설정 =====================
-# vpc_cidr는 서울과 겹치면 VPC Peering이 불가능하므로 반드시 다른 대역 사용
-
+# 미국(us-east-1) pilot-light 재해복구 리전 설정
 variable "us_aws_region" {
-  description = "미국 리전"
+  description = "미국 재해복구 리전"
   type        = string
   default     = "us-east-1"
 }
 
 variable "us_region_name" {
-  description = "미국 리전 리소스 이름 태그용 식별자"
+  description = "미국 리전 리소스 이름 접두사"
   type        = string
   default     = "my-app-dev-us"
 }
 
 variable "us_vpc_cidr" {
-  description = "미국 리전 VPC CIDR 블록 (서울 10.0.0.0/16과 겹치지 않아야 함)"
+  description = "미국 VPC CIDR(서울 VPC와 중복 금지)"
   type        = string
   default     = "10.1.0.0/16"
 }
 
 variable "us_public_subnets" {
-  description = "미국 리전 퍼블릭 서브넷 CIDR 리스트"
+  description = "미국 퍼블릭 서브넷 CIDR 목록"
   type        = list(string)
   default     = ["10.1.1.0/24", "10.1.2.0/24"]
 }
 
 variable "us_private_subnets" {
-  description = "미국 리전 프라이빗 서브넷 CIDR 리스트"
+  description = "미국 프라이빗 서브넷 CIDR 목록"
   type        = list(string)
   default     = ["10.1.10.0/24", "10.1.11.0/24"]
 }
+

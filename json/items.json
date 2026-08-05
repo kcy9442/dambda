@@ -4,7 +4,7 @@
     "itemId": "snack_osulloc_pretzel",
     "name": "오설록 말차 프레첼",
     "price": 6000,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "말차 좋아하면 개추. 말차의 녹진한 맛이 일품.",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/snack/osulloc_pretzel.jpg"
   },
@@ -208,8 +208,8 @@
     "itemId": "cosmetic_torriden_divein_serum",
     "name": "토리든 다이브인 세럼 50+50ml",
     "price": 36000,
-    "store": "올리브영",
-    "reason": "끈적임 없는 속건조 해결, 밀착력이 좋음 (올리브영 외국인 판매 상위권)",
+    "store": "올리브영, 오프뷰티",
+    "reason": "끈적임 없는 속건조 해결, 밀착력이 좋음 (올리브영, 오프뷰티 외국인 판매 상위권)",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/torriden_divein_serum.jpg"
   },
   {
@@ -217,7 +217,7 @@
     "itemId": "cosmetic_vt_reedleshot100",
     "name": "VT 리들샷100",
     "price": 23000,
-    "store": "오프뷰티, 올리브영",
+    "store": "오프뷰티, 올리브영, 오프뷰티",
     "reason": "즉각적인 반응이 오는 모공 개선 에센스",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/vt_reedleshot100.jpg"
   },
@@ -226,7 +226,7 @@
     "itemId": "cosmetic_vt_reedleshot300",
     "name": "VT 리들샷300",
     "price": 29000,
-    "store": "오프뷰티, 올리브영",
+    "store": "오프뷰티, 올리브영, 오프뷰티",
     "reason": "한국 오면 꼭 사야 하는 화장품. 리들샷 100이 적응된 분이 쓰세요.",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/vt_reedleshot300.jpg"
   },
@@ -235,7 +235,7 @@
     "itemId": "cosmetic_roundlab_dokdo_toner",
     "name": "라운드랩 1025 독도 토너",
     "price": 27000,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "자극이 적은 완성도 높은 토너",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/roundlab_dokdo_toner.jpg"
   },
@@ -244,7 +244,7 @@
     "itemId": "cosmetic_cosrx_snail_mucin_essence",
     "name": "코스알엑스 어드밴스드 스네일 96 뮤신 파워 에센스",
     "price": 23000,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "달팽이 점액이 들어간 가성비 제품",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/cosrx_snail_mucin_essence.jpg"
   },
@@ -253,7 +253,7 @@
     "itemId": "cosmetic_torriden_vitminC_brightening_ampoule",
     "name": "토리든 비타c브라이트닝 앰플",
     "price": 26000,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "다이브인(DIVE-IN) 저분자 히알루론산 라인의 촉촉한 한국식 스킨케어",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/torriden_ampoule.jpg"
   },
@@ -262,7 +262,7 @@
     "itemId": "cosmetic_torriden_cellmazing_lip_essence",
     "name": "토리든 셀메이징 저분자 콜라겐 볼륨 립 에센스 11ml",
     "price": 6800,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "저분자 콜라겐, 볼륨 립 케어, 입술에 생기를 불어넣어 주는 립밤",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/torriden_cellmazing_lip_essence.jpg"
   },
@@ -271,7 +271,7 @@
     "itemId": "cosmetic_boh_3d_cream",
     "name": "BOH 3D 크림",
     "price": 16000,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "리프팅이 되는 차별성 있는 마스크",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/boh_3d_cream.jpg"
   },
@@ -280,7 +280,7 @@
     "itemId": "cosmetic_rejuran_healer_mask",
     "name": "리쥬란 힐러스킨 마스크팩 10매 기획",
     "price": 29700,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "피부과 전문 성분의 c-PDRN 확실한 효능",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/rejuran_healer_mask.jpg"
   },
@@ -289,7 +289,7 @@
     "itemId": "cosmetic_beauty_of_joseon_sunscreen",
     "name": "조선미녀 맑은쌀 선크림",
     "price": 26000,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "백탁 현상이 적은 가성비 선크림",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/beauty_of_joseon_sunscreen.jpg"
   },
@@ -298,7 +298,7 @@
     "itemId": "cosmetic_roundlab_birch_sunscreen",
     "name": "라운드랩 자작나무 수분 선크림",
     "price": 24500,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "수분크림 같은 선크림으로 흡수가 빠름",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/roundlab_birch_sunscreen.jpg"
   },
@@ -307,7 +307,7 @@
     "itemId": "cosmetic_anua_heartleaf_toner",
     "name": "아누아 어성초 77 히알루론산 수분 진정 토너",
     "price": 22800,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "77%의 좁쌀, 트러블 진정 효과와 매끈한 피부결을 연출",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/anua_heartleaf_toner.jpg"
   },
@@ -316,7 +316,7 @@
     "itemId": "cosmetic_anua_pdrn_capsule_serum",
     "name": "아누아 어성초 PDRN 히알루론산 캡슐세럼",
     "price": 27500,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "PDRN을 캡슐화해 흡수율이 좋음",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/anua_pdrn_capsule_serum.jpg"
   },
@@ -325,8 +325,8 @@
     "itemId": "cosmetic_numbuzin_mask_5p",
     "name": "넘버즈인 마스크팩 5매",
     "price": 9400,
-    "store": "올리브영",
-    "reason": "7,000만 장 이상 팔린 올리브영 베스트셀러",
+    "store": "올리브영, 오프뷰티",
+    "reason": "7,000만 장 이상 팔린 올리브영, 오프뷰티 베스트셀러",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/numbuzin_mask_5p.jpg"
   },
   {
@@ -334,7 +334,7 @@
     "itemId": "cosmetic_romand_lip_tint",
     "name": "롬앤 립틴트",
     "price": 9900,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "미세한 톤과 계절감도 고려한 다양한 색상, 착한 가격",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/romand_lip_tint.jpg"
   },
@@ -343,7 +343,7 @@
     "itemId": "cosmetic_mediheal_toner_pad_100p",
     "name": "메디힐 토너패드 100매",
     "price": 17900,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "글로벌 시장까지 싹쓸이한 아침 5분 스킨케어",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/mediheal_toner_pad_100p.jpg"
   },
@@ -352,7 +352,7 @@
     "itemId": "cosmetic_drg_brightening_up_sun",
     "name": "닥터지 브라이트닝 업 선플러스",
     "price": 25600,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "미백 효과가 있음. 파운데이션 대신 하나만 발라도 됨",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/drg_brightening_up_sun.jpg"
   },
@@ -361,7 +361,7 @@
     "itemId": "cosmetic_dalba_vita_toning_spray_serum",
     "name": "달바 비타 토닝 안티에이징 스프레이 세럼 8% 70ml",
     "price": 23900,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "하루 종일 화사한 피부를 유지하고 싶은 분들의 필수템",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/dalba_vita_toning_spray_serum.jpg"
   },
@@ -370,7 +370,7 @@
     "itemId": "cosmetic_clio_kill_cover_cushion",
     "name": "클리오 킬커버 쿠션",
     "price": 27000,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "베이스 메이크업의 정석. 피부 타입별 맞춤형으로 제공",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/clio_kill_cover_cushion.jpg"
   },
@@ -379,7 +379,7 @@
     "itemId": "cosmetic_etude_curl_fix_mascara",
     "name": "에뛰드 컬 픽스 마스카라 1+1 기획",
     "price": 15500,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "번짐이 없는 마스카라, 뭉침 없이 깔끔한 연장과 가성비가 좋음",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/etude_curl_fix_mascara.jpg"
   },
@@ -388,7 +388,7 @@
     "itemId": "cosmetic_laneige_lip_sleeping_mask",
     "name": "라네즈 립 슬리핑 마스크 20g 7종",
     "price": 17600,
-    "store": "올리브영",
+    "store": "올리브영, 오프뷰티",
     "reason": "밤사이에 각질을 녹여내는 압도적인 효과 (1초에 1개씩 팔림)",
     "imageUrl": "https://dambda-images.s3.ap-northeast-2.amazonaws.com/cosmetic/laneige_lip_sleeping_mask.jpg"
   }
