@@ -20,18 +20,18 @@ resource "aws_vpc_peering_connection_accepter" "us_accept" {
 
 resource "aws_route" "seoul_to_us" {
   provider = aws.seoul
-  count    = length(module.network.private_route_table_ids)
+  for_each = zipmap(var.private_subnets, module.network.private_route_table_ids)
 
-  route_table_id            = module.network.private_route_table_ids[count.index]
+  route_table_id            = each.value
   destination_cidr_block    = var.us_vpc_cidr
   vpc_peering_connection_id = aws_vpc_peering_connection.seoul_to_us.id
 }
 
 resource "aws_route" "us_to_seoul" {
   provider = aws.us_east_1
-  count    = length(module.network_us.private_route_table_ids)
+  for_each = zipmap(var.us_private_subnets, module.network_us.private_route_table_ids)
 
-  route_table_id            = module.network_us.private_route_table_ids[count.index]
+  route_table_id            = each.value
   destination_cidr_block    = var.vpc_cidr
   vpc_peering_connection_id = aws_vpc_peering_connection.seoul_to_us.id
 
