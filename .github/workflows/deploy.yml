@@ -35,6 +35,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
       - run: npm ci
         working-directory: backend
       - run: npm ci
@@ -90,6 +94,8 @@ jobs:
           echo "cluster=$(terraform output -raw backend_ecs_cluster_name)" >> "$GITHUB_OUTPUT"
           echo "service=$(terraform output -raw backend_ecs_service_name)" >> "$GITHUB_OUTPUT"
           echo "api=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "web_bucket=$(terraform output -raw static_site_bucket_name)" >> "$GITHUB_OUTPUT"
+          echo "web_distribution=$(terraform output -raw static_site_distribution_id)" >> "$GITHUB_OUTPUT"
       - name: Deploy ECS and wait
         env:
           CLUSTER: ${{ steps.tf.outputs.cluster }}
@@ -101,3 +107,18 @@ jobs:
         env:
           API: ${{ steps.tf.outputs.api }}
         run: curl --fail --retry 6 --retry-delay 10 "${API%/}/"
+      - name: Build Flutter web
+        working-directory: dambda
+        env:
+          API: ${{ steps.tf.outputs.api }}
+        run: |
+          flutter pub get
+          flutter build web --release --dart-define=API_BASE_URL="${API%/}"
+      - name: Publish Flutter web to S3
+        env:
+          WEB_BUCKET: ${{ steps.tf.outputs.web_bucket }}
+        run: aws s3 sync dambda/build/web/ "s3://$WEB_BUCKET/" --delete
+      - name: Invalidate CloudFront cache
+        env:
+          WEB_DISTRIBUTION: ${{ steps.tf.outputs.web_distribution }}
+        run: aws cloudfront create-invalidation --distribution-id "$WEB_DISTRIBUTION" --paths '/*'
