@@ -11,6 +11,7 @@ npm-debug.log*
 # Terraform
 terraform/.terraform/
 terraform-bootstrap/.terraform/
+terraform-bootstrap/terraform.tfvars
 terraform/.tmp/
 terraform/*.tfstate
 terraform/*.tfstate.*

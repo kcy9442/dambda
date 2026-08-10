@@ -47,16 +47,34 @@ jobs:
           -backend-config="key=${{ vars.TF_STATE_KEY }}"
           -backend-config="region=${{ vars.TF_STATE_REGION || vars.AWS_REGION }}"
           -backend-config="use_lockfile=true"
-      - name: Bootstrap and update Tavily secret
-        if: env.TAVILY_API_KEY != ''
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          test -n "${{ vars.AWS_DEPLOY_ROLE_ARN }}" || { echo "AWS_DEPLOY_ROLE_ARN is required"; exit 1; }
+          test -n "${{ vars.TF_STATE_BUCKET }}" || { echo "TF_STATE_BUCKET is required"; exit 1; }
+          test -n "$TAVILY_API_KEY" || { echo "production secret TAVILY_API_KEY is required"; exit 1; }
+      - name: Bootstrap ECR repository and Tavily secret
         working-directory: terraform
         env:
           TF_VAR_bedrock_guardrail_profile_identifier: ${{ vars.BEDROCK_GUARDRAIL_PROFILE_ARN }}
         shell: bash
         run: |
-          terraform apply -input=false -auto-approve -target=aws_secretsmanager_secret.tavily_api_key
+          terraform apply -input=false -auto-approve \
+            -target=module.compute.aws_ecr_repository.backend \
+            -target=aws_secretsmanager_secret.tavily_api_key
           secret_arn="$(terraform output -raw tavily_secret_arn)"
           aws secretsmanager put-secret-value --secret-id "$secret_arn" --secret-string "$TAVILY_API_KEY" >/dev/null
+          echo "ecr=$(terraform output -raw backend_ecr_repository_url)" >> "$GITHUB_OUTPUT"
+        id: bootstrap
+      - uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push backend image before ECS creation
+        env:
+          ECR: ${{ steps.bootstrap.outputs.ecr }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          docker build -t "$ECR:$SHA" -t "$ECR:latest" backend
+          docker push "$ECR:$SHA"
+          docker push "$ECR:latest"
       - name: Terraform plan
         working-directory: terraform
         env:
@@ -70,19 +88,9 @@ jobs:
         working-directory: terraform
         shell: bash
         run: |
-          echo "ecr=$(terraform output -raw backend_ecr_repository_url)" >> "$GITHUB_OUTPUT"
           echo "cluster=$(terraform output -raw backend_ecs_cluster_name)" >> "$GITHUB_OUTPUT"
           echo "service=$(terraform output -raw backend_ecs_service_name)" >> "$GITHUB_OUTPUT"
           echo "api=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
-      - uses: aws-actions/amazon-ecr-login@v2
-      - name: Build and push backend image
-        env:
-          ECR: ${{ steps.tf.outputs.ecr }}
-          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-        run: |
-          docker build -t "$ECR:$SHA" -t "$ECR:latest" backend
-          docker push "$ECR:$SHA"
-          docker push "$ECR:latest"
       - name: Deploy ECS and wait
         env:
           CLUSTER: ${{ steps.tf.outputs.cluster }}
