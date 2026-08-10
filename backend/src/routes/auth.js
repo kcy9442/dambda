@@ -104,7 +104,10 @@ router.get('/me', authenticate, asyncHandler(async (req, res) => {
   if (!profile) {
     return res.status(404).json({ error: 'profile not found' });
   }
-  res.status(200).json(profile);
+  res.status(200).json({
+    ...profile,
+    isAdmin: await cognito.isAdmin(req.user.username),
+  });
 }));
 
 // 소셜 로그인 사용자는 Cognito에는 자동 생성되지만 앱 전용 프로필은 DynamoDB에 없으므로
@@ -124,7 +127,10 @@ router.post('/social/session', authenticate, asyncHandler(async (req, res) => {
     };
     await dynamodb.putProfile(profile);
   }
-  res.status(200).json(profile);
+  res.status(200).json({
+    ...profile,
+    isAdmin: await cognito.isAdmin(req.user.username),
+  });
 }));
 
 module.exports = router;
