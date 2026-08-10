@@ -48,9 +48,8 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
 }
 
 resource "aws_iam_role_policy" "ecs_execution_secrets" {
-  count = var.tavily_api_key_secret_arn == "" ? 0 : 1
-  name  = "${var.region_name}-ecs-tavily-secret"
-  role  = aws_iam_role.ecs_task_execution_role.id
+  name = "${var.region_name}-ecs-tavily-secret"
+  role = aws_iam_role.ecs_task_execution_role.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
