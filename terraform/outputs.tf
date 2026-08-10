@@ -8,6 +8,16 @@ output "static_site_url" {
   value       = module.storage.website_endpoint
 }
 
+output "static_site_bucket_name" {
+  description = "S3 bucket that hosts the Flutter web build"
+  value       = module.storage.bucket_name
+}
+
+output "static_site_distribution_id" {
+  description = "CloudFront distribution for the Flutter website"
+  value       = module.storage.cloudfront_distribution_id
+}
+
 output "backend_ecr_repository_url" {
   description = "서울 리전 백엔드 Docker 이미지를 push할 ECR 저장소 URL"
   value       = module.compute.ecr_repository_url
