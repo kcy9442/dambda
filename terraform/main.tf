@@ -44,7 +44,9 @@ module "storage" {
   source    = "./modules/storage"
   providers = { aws = aws.seoul }
 
-  region_name = var.region_name
+  region_name         = var.region_name
+  custom_domain       = var.web_domain
+  acm_certificate_arn = aws_acm_certificate_validation.web.certificate_arn
 }
 
 # 5. 로그인/회원가입 인증 (독립적, 다른 모듈과 의존관계 없음)
@@ -53,6 +55,7 @@ module "cognito" {
   providers = { aws = aws.seoul }
 
   region_name = var.region_name
+  site_url    = "https://${var.web_domain}"
 }
 
 # 6. 회원 프로필 저장 (독립적, 다른 모듈과 의존관계 없음)

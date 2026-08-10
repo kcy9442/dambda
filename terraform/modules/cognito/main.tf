@@ -55,8 +55,8 @@ resource "aws_cognito_user_pool_client" "app_client" {
     "profile",
     "aws.cognito.signin.user.admin",
   ]
-  callback_urls = ["https://d2184j0xiqu4yb.cloudfront.net/auth/callback"]
-  logout_urls   = ["https://d2184j0xiqu4yb.cloudfront.net/login"]
+  callback_urls = ["${var.site_url}/auth/callback"]
+  logout_urls   = ["${var.site_url}/login"]
 
   prevent_user_existence_errors = "ENABLED"
 
