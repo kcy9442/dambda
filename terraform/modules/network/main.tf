@@ -73,6 +73,12 @@ resource "aws_route_table" "private" {
     nat_gateway_id = aws_nat_gateway.nat.id
   }
 
+  # Cross-region peering routes are managed by standalone aws_route resources.
+  # Ignore the combined route set here so this resource does not remove them.
+  lifecycle {
+    ignore_changes = [route]
+  }
+
   tags = { Name = "${var.region_name}-private-rt-${count.index + 1}" }
 }
 

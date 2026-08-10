@@ -168,3 +168,9 @@ variable "tavily_api_key_secret_arn" {
   type        = string
   default     = ""
 }
+
+variable "enable_tavily_secret" {
+  description = "Whether this regional ECS service reads the Tavily key from Secrets Manager"
+  type        = bool
+  default     = false
+}
