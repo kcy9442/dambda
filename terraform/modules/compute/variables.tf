@@ -143,3 +143,28 @@ variable "product_catalog_table_arn" {
   type    = string
   default = ""
 }
+
+variable "resource_region" {
+  description = "Cognito, DynamoDB, S3, Lambda 데이터 리전. 비어 있으면 ECS 리전을 사용"
+  type        = string
+  default     = ""
+}
+
+variable "product_images_bucket_name" {
+  type    = string
+  default = ""
+}
+variable "product_images_bucket_arn" {
+  type    = string
+  default = ""
+}
+variable "product_images_bucket_domain" {
+  type    = string
+  default = ""
+}
+
+variable "tavily_api_key_secret_arn" {
+  description = "Secrets Manager ARN containing the Tavily API key"
+  type        = string
+  default     = ""
+}

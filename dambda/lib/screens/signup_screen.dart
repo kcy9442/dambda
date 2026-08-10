@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../data/countries.dart';
 import '../l10n/app_localizations.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/language_menu.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -19,6 +21,25 @@ class _SignupScreenState extends State<SignupScreen> {
   String? _countryCode;
   bool _obscurePassword = true;
 
+  void _handlePasswordBackspace() {
+    final value = _passwordController.value;
+    final selection = value.selection;
+    if (!selection.isValid) return;
+    final start = selection.start;
+    final end = selection.end;
+    if (start != end) {
+      _passwordController.value = value.copyWith(
+        text: value.text.replaceRange(start, end, ''),
+        selection: TextSelection.collapsed(offset: start),
+      );
+    } else if (start > 0) {
+      _passwordController.value = value.copyWith(
+        text: value.text.replaceRange(start - 1, start, ''),
+        selection: TextSelection.collapsed(offset: start - 1),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -30,9 +51,9 @@ class _SignupScreenState extends State<SignupScreen> {
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
     if (_countryCode == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.countryRequiredError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.countryRequiredError)));
       return;
     }
 
@@ -46,19 +67,33 @@ class _SignupScreenState extends State<SignupScreen> {
     if (!mounted) return;
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authState.lastError ?? l10n.signupFailedDefault)),
+        SnackBar(
+          content: Text(authState.lastError ?? l10n.signupFailedDefault),
+        ),
       );
       return;
     }
-    // 가입 성공 시 자동 로그인하지 않고 로그인 화면으로 보내서 직접 로그인하게 함
+    if (!mounted) return;
+    final nickname = _nicknameController.text.trim();
     context.go('/login');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.signupSuccessMessage(nickname))),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.signupTitle)),
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: () => context.go('/login'),
+          icon: const Icon(Icons.arrow_back),
+        ),
+        title: Text(l10n.signupTitle),
+        actions: const [LanguageMenu(), SizedBox(width: 8)],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -74,18 +109,29 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: l10n.passwordLabel,
-                  helperText: l10n.passwordHelper,
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+              CallbackShortcuts(
+                bindings: {
+                  const SingleActivator(LogicalKeyboardKey.backspace):
+                      _handlePasswordBackspace,
+                },
+                child: TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  decoration: InputDecoration(
+                    labelText: l10n.passwordLabel,
+                    helperText: l10n.passwordHelper,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
               ),
@@ -106,7 +152,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 items: [
                   for (final country in countries)
-                    DropdownMenuItem(value: country.code, child: Text(country.nameKo)),
+                    DropdownMenuItem(
+                      value: country.code,
+                      child: Text(country.nameKo),
+                    ),
                 ],
                 onChanged: (value) => setState(() => _countryCode = value),
               ),

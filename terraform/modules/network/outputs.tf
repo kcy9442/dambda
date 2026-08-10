@@ -28,7 +28,4 @@ output "vpc_cidr" {
   value       = aws_vpc.main.cidr_block
 }
 
-# 나중에 ECS 모듈에서 엔드포인트 보안 그룹 규칙을 수정할 때 필요할 수 있음
-output "ecs_security_group_id" {
-  value = aws_security_group.api_gateway_endpoint_sg.id
-}
+

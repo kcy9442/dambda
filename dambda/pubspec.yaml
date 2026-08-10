@@ -51,6 +51,8 @@ dependencies:
   # 언어 설정처럼 민감하지 않은 값 저장용 (토큰은 flutter_secure_storage를 계속 씀)
   shared_preferences: ^2.3.2
   go_router: 17.3.0
+  crypto: ^3.0.6
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

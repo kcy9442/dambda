@@ -5,7 +5,13 @@ import 'api_exception.dart';
 import 'http_timeout.dart';
 
 class ProductInteractionsService {
-  Uri _uri(String path) => Uri.parse('$apiBaseUrl$path');
+  Uri _uri(String path) {
+    final base = apiBaseUrl.endsWith('/')
+        ? apiBaseUrl.substring(0, apiBaseUrl.length - 1)
+        : apiBaseUrl;
+    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    return Uri.parse('$base$normalizedPath');
+  }
 
   Future<List<String>> myLikedProductIds(String token) async {
     final response = await http

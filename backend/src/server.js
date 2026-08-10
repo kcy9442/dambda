@@ -4,6 +4,8 @@ const config = require('./config');
 const authRoutes = require('./routes/auth');
 const productsRoutes = require('./routes/products');
 const reviewsRoutes = require('./routes/reviews');
+const adminRoutes = require('./routes/admin');
+const searchRoutes = require('./routes/search');
 
 const app = express();
 app.use(cors());
@@ -17,6 +19,8 @@ app.get('/', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/products', productsRoutes);
 app.use('/products/:productId/reviews', reviewsRoutes);
+app.use('/admin', adminRoutes);
+app.use('/search', searchRoutes);
 
 // 라우트에서 처리 안 한 예외의 최종 방어선 (asyncHandler가 여기로 넘겨줌) -
 // 이게 없으면 하나의 요청에서 난 에러가 서버 프로세스 전체를 죽임

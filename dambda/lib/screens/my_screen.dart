@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../data/countries.dart';
 import '../l10n/app_localizations.dart';
 import '../state/app_state.dart';
@@ -44,14 +45,20 @@ class MyScreen extends StatelessWidget {
                     children: [
                       Text(
                         profile?.nickname ?? l10n.guestName,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         profile != null
                             ? '${_countryName(profile.country)} · ${profile.email}'
                             : l10n.guestSubtitle,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -85,6 +92,11 @@ class MyScreen extends StatelessWidget {
               _MenuRow(icon: Icons.receipt_long, label: l10n.menuOrders),
               _MenuRow(icon: Icons.help_outline, label: l10n.menuSupport),
               _MenuRow(icon: Icons.info_outline, label: l10n.menuAbout),
+              _MenuRow(
+                icon: Icons.admin_panel_settings_outlined,
+                label: '관리자 페이지',
+                onTap: () => context.go('/admin'),
+              ),
               _MenuRow(
                 icon: Icons.logout,
                 label: l10n.menuLogout,
@@ -122,7 +134,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

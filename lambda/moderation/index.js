@@ -1,66 +1,70 @@
-const { ComprehendClient, DetectToxicContentCommand } = require('@aws-sdk/client-comprehend');
+const { BedrockRuntimeClient, ApplyGuardrailCommand } = require('@aws-sdk/client-bedrock-runtime');
 const { RekognitionClient, DetectModerationLabelsCommand } = require('@aws-sdk/client-rekognition');
 
 const region = process.env.AWS_REGION;
-// DetectToxicContent는 이 프로젝트가 쓰는 리전(ap-northeast-2)에서 NotAuthorizedException으로
-// 막혀있음이 확인됨(계정/리전 단위 미지원) - Lambda 자체는 그대로 두고 Comprehend 호출만
-// 지원되는 리전(us-east-1)으로 보냄. Rekognition은 ap-northeast-2에서 정상 동작 확인됨
-const comprehend = new ComprehendClient({ region: 'us-east-1' });
+const guardrailId = process.env.BEDROCK_GUARDRAIL_ID;
+const guardrailVersion = process.env.BEDROCK_GUARDRAIL_VERSION;
+const bedrock = new BedrockRuntimeClient({ region });
 const rekognition = new RekognitionClient({ region });
-
-const TOXICITY_THRESHOLD = 0.7;
 const MIN_MODERATION_CONFIDENCE = 70;
 
 async function checkText(text) {
   if (!text || !text.trim()) return { approved: true, reasons: [] };
+  if (!guardrailId || !guardrailVersion) {
+    throw new Error('BEDROCK_GUARDRAIL_ID and BEDROCK_GUARDRAIL_VERSION are required');
+  }
 
-  const result = await comprehend.send(
-    new DetectToxicContentCommand({
-      TextSegments: [{ Text: text }],
-      LanguageCode: 'en',
-    })
-  );
+  const result = await bedrock.send(new ApplyGuardrailCommand({
+    guardrailIdentifier: guardrailId,
+    guardrailVersion,
+    source: 'INPUT',
+    content: [{ text: { text: text.trim() } }],
+  }));
 
-  const reasons = [];
-  for (const segment of result.ResultList || []) {
-    for (const label of segment.Labels || []) {
-      if (label.Score >= TOXICITY_THRESHOLD) {
-        reasons.push(`text:${label.Name}`);
-      }
+  const reasons = new Set();
+  for (const assessment of result.assessments || []) {
+    for (const filter of assessment.contentPolicy?.filters || []) {
+      if (filter.action === 'BLOCKED') reasons.add(`text:${filter.type || 'CONTENT_POLICY'}`);
+    }
+    for (const topic of assessment.topicPolicy?.topics || []) {
+      if (topic.action === 'BLOCKED') reasons.add(`text:TOPIC:${topic.name || 'DENIED'}`);
+    }
+    for (const word of assessment.wordPolicy?.customWords || []) {
+      if (word.action === 'BLOCKED') reasons.add('text:CUSTOM_WORD');
+    }
+    for (const entity of assessment.sensitiveInformationPolicy?.piiEntities || []) {
+      if (entity.action === 'BLOCKED') reasons.add(`text:PII:${entity.type || 'UNKNOWN'}`);
     }
   }
-  return { approved: reasons.length === 0, reasons };
+
+  const intervened = result.action === 'GUARDRAIL_INTERVENED';
+  if (intervened && reasons.size === 0) reasons.add('text:GUARDRAIL_INTERVENED');
+  return { approved: !intervened, reasons: [...reasons] };
 }
 
 async function checkImage(imageBucket, imageKey) {
   if (!imageBucket || !imageKey) return { approved: true, reasons: [] };
-
-  const result = await rekognition.send(
-    new DetectModerationLabelsCommand({
-      Image: { S3Object: { Bucket: imageBucket, Name: imageKey } },
-      MinConfidence: MIN_MODERATION_CONFIDENCE,
-    })
-  );
-
+  const result = await rekognition.send(new DetectModerationLabelsCommand({
+    Image: { S3Object: { Bucket: imageBucket, Name: imageKey } },
+    MinConfidence: MIN_MODERATION_CONFIDENCE,
+  }));
   const reasons = (result.ModerationLabels || []).map((label) => `image:${label.Name}`);
   return { approved: reasons.length === 0, reasons };
 }
 
 exports.handler = async (event) => {
   const { text, imageBucket, imageKey } = event || {};
-
   try {
     const [textResult, imageResult] = await Promise.all([
       checkText(text),
       checkImage(imageBucket, imageKey),
     ]);
-
     return {
       approved: textResult.approved && imageResult.approved,
       reasons: [...textResult.reasons, ...imageResult.reasons],
     };
   } catch (err) {
-    // 검열 자체가 실패하면(쓰로틀링 등) 우회시키지 않고 막음 - fail-closed
+    // Fail closed: unchecked content must never be persisted.
     console.error('moderation check failed', err);
     return { approved: false, reasons: ['moderation_service_error'] };
   }

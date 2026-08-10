@@ -57,10 +57,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get signupButton => '가입하기';
 
   @override
+  String signupSuccessMessage(String nickname) {
+    return '$nickname 님 환영합니다. 가입한 계정으로 로그인해주세요.';
+  }
+
+  @override
   String get retryButton => '다시 시도';
 
   @override
   String get productNotFound => '상품을 찾을 수 없어요.';
+
+  @override
+  String get storeLabel => '파는 곳';
 
   @override
   String get homeBannerTitle => '한국에 오셨다면, 이건 꼭 담아가세요';

@@ -4,7 +4,12 @@ output "bucket_name" {
 }
 
 output "website_endpoint" {
-  description = "S3 정적 웹 호스팅 엔드포인트 URL"
+  description = "CloudFront HTTPS 웹 사이트 URL"
+  value       = "https://${aws_cloudfront_distribution.static_site.domain_name}"
+}
+
+output "s3_website_endpoint" {
+  description = "원본 S3 정적 웹 호스팅 엔드포인트 URL"
   value       = "http://${aws_s3_bucket_website_configuration.static_site.website_endpoint}"
 }
 
@@ -22,3 +27,8 @@ output "review_photos_bucket_regional_domain" {
   description = "리뷰 사진 공개 URL 조립용 (https://<domain>/<key>)"
   value       = aws_s3_bucket.review_photos.bucket_regional_domain_name
 }
+
+output "product_images_bucket_name" { value = aws_s3_bucket.product_images.id }
+output "product_images_bucket_arn" { value = aws_s3_bucket.product_images.arn }
+output "product_images_bucket_domain" { value = aws_s3_bucket.product_images.bucket_regional_domain_name }
+

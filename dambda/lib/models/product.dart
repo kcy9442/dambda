@@ -4,14 +4,20 @@ class ProductTranslation {
   final String? store;
   final String? discountInfo;
 
-  const ProductTranslation({this.name, this.reason, this.store, this.discountInfo});
+  const ProductTranslation({
+    this.name,
+    this.reason,
+    this.store,
+    this.discountInfo,
+  });
 
-  factory ProductTranslation.fromJson(Map<String, dynamic> json) => ProductTranslation(
-    name: json['name'] as String?,
-    reason: json['reason'] as String?,
-    store: json['store'] as String?,
-    discountInfo: json['discountInfo'] as String?,
-  );
+  factory ProductTranslation.fromJson(Map<String, dynamic> json) =>
+      ProductTranslation(
+        name: json['name'] as String?,
+        reason: json['reason'] as String?,
+        store: json['store'] as String?,
+        discountInfo: json['discountInfo'] as String?,
+      );
 }
 
 class Product {
@@ -23,7 +29,7 @@ class Product {
   final String? reason;
   final String? discountInfo;
   final String? imageUrl;
-  final Map<String, ProductTranslation> translations;
+  final Map<String, Map<String, String>> translations;
 
   const Product({
     required this.id,
@@ -37,6 +43,18 @@ class Product {
     this.translations = const {},
   });
 
+  static Map<String, Map<String, String>> _parseTranslations(dynamic value) {
+    if (value is! Map) return const {};
+    return value.map((language, fields) {
+      final localizedFields = fields is Map
+          ? fields.map(
+              (field, text) => MapEntry(field.toString(), text.toString()),
+            )
+          : <String, String>{};
+      return MapEntry(language.toString(), localizedFields);
+    });
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) => Product(
     id: json['itemId'] as String,
     name: json['name'] as String,
@@ -46,23 +64,102 @@ class Product {
     reason: json['reason'] as String?,
     discountInfo: json['discountInfo'] as String?,
     imageUrl: json['imageUrl'] as String?,
-    translations: (json['translations'] as Map<String, dynamic>?)?.map(
-          (lang, value) => MapEntry(lang, ProductTranslation.fromJson(value as Map<String, dynamic>)),
-        ) ??
-        const {},
+    translations: _parseTranslations(json['translations']),
   );
 
+  String _localizedField(String field, String fallback, String languageCode) {
+    if (languageCode == 'ko') return fallback;
+    final translated = translations[languageCode]?[field]?.trim();
+    return translated == null || translated.isEmpty ? fallback : translated;
+  }
+
+  String localizedName(String languageCode) =>
+      _localizedField('name', name, languageCode);
+
+  String? localizedReason(String languageCode) {
+    if (reason == null) return null;
+    return _localizedField('reason', reason!, languageCode);
+  }
+
+  String? localizedDiscountInfo(String languageCode) {
+    if (discountInfo == null) return null;
+    return _localizedField('discountInfo', discountInfo!, languageCode);
+  }
+
   String get priceLabel {
+    return localizedPriceLabel('ko');
+  }
+
+  String localizedPriceLabel(String languageCode) {
     final text = price.toString().replaceAllMapped(
       RegExp(r'\B(?=(\d{3})+(?!\d))'),
       (match) => ',',
     );
-    return '₩$text';
+    return switch (languageCode) {
+      'en' => '₩$text',
+      'ja' => '$textウォン',
+      'zh' => '$text韩元',
+      _ => '$text원',
+    };
   }
 
-  // 해당 언어 번역이 없으면(한국어이거나 아직 번역이 없는 경우) 원문으로 자동 폴백
-  String nameFor(String lang) => translations[lang]?.name ?? name;
-  String? reasonFor(String lang) => translations[lang]?.reason ?? reason;
-  String storeFor(String lang) => translations[lang]?.store ?? store;
-  String? discountInfoFor(String lang) => translations[lang]?.discountInfo ?? discountInfo;
+  String localizedStore(String languageCode) {
+    final storedTranslation = translations[languageCode]?['store']?.trim();
+    if (storedTranslation != null && storedTranslation.isNotEmpty) {
+      return storedTranslation;
+    }
+    var localized = store;
+    const translationsByLanguage = <String, Map<String, String>>{
+      'en': {
+        '명동hbaf': 'HBAF Myeongdong',
+        'hbaf명동매장': 'HBAF Myeongdong Store',
+        'hbaf매장': 'HBAF Store',
+        '오프뷰티': 'OFF BEAUTY',
+        '올리브영': 'Olive Young',
+        '무탠다드': 'MUSINSA Standard',
+        '편의점': 'Convenience stores',
+        '약국': 'Pharmacies',
+        '다이소': 'Daiso',
+        '롯데': 'Lotte',
+        'e마트': 'E-Mart',
+      },
+      'ja': {
+        '명동hbaf': 'HBAF 明洞',
+        'hbaf명동매장': 'HBAF 明洞店',
+        'hbaf매장': 'HBAF 店舗',
+        '오프뷰티': 'OFF BEAUTY',
+        '올리브영': 'オリーブヤング',
+        '무탠다드': 'MUSINSA Standard',
+        '편의점': 'コンビニ',
+        '약국': '薬局',
+        '다이소': 'ダイソー',
+        '롯데': 'ロッテ',
+        'e마트': 'イーマート',
+      },
+      'zh': {
+        '명동hbaf': 'HBAF 明洞',
+        'hbaf명동매장': 'HBAF 明洞店',
+        'hbaf매장': 'HBAF 门店',
+        '오프뷰티': 'OFF BEAUTY',
+        '올리브영': 'Olive Young',
+        '무탠다드': 'MUSINSA Standard',
+        '편의점': '便利店',
+        '약국': '药店',
+        '다이소': '大创',
+        '롯데': '乐天',
+        'e마트': '易买得',
+      },
+    };
+    final fallbackTranslations = translationsByLanguage[languageCode];
+    if (fallbackTranslations == null) return localized;
+    for (final entry in fallbackTranslations.entries) {
+      localized = localized.replaceAll(entry.key, entry.value);
+    }
+    return localized;
+  }
+
+  String nameFor(String lang) => localizedName(lang);
+  String? reasonFor(String lang) => localizedReason(lang);
+  String storeFor(String lang) => localizedStore(lang);
+  String? discountInfoFor(String lang) => localizedDiscountInfo(lang);
 }

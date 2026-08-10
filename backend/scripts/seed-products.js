@@ -5,50 +5,18 @@ const fs = require('fs');
 const path = require('path');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
-const { translateText } = require('../src/services/translate');
+const { TranslateClient, TranslateTextCommand } = require('@aws-sdk/client-translate');
 
 const TABLE_NAME = process.env.PRODUCT_CATALOG_TABLE_NAME;
+const AWS_REGION = process.env.AWS_REGION || 'ap-northeast-2';
+const TERMINOLOGY_NAME = process.env.TRANSLATE_TERMINOLOGY_NAME;
+const TARGET_LANGUAGES = ['en', 'ja', 'zh'];
+const TRANSLATED_FIELDS = ['name', 'reason', 'store', 'discountInfo'];
 const ITEMS_JSON_PATH = path.join(__dirname, '..', '..', 'json', 'items.json');
-// 한국어는 원문이라 제외 - 영어/일본어/중국어로 배치 번역
-const TARGET_LANGS = ['en', 'ja', 'zh'];
-const CONCURRENCY = 10;
 
 if (!TABLE_NAME) {
   console.error('PRODUCT_CATALOG_TABLE_NAME env var is required');
   process.exit(1);
-}
-
-// 상품 리스트를 동시에 CONCURRENCY개씩만 처리 (Translate 쓰로틀링 방지)
-async function mapWithConcurrency(items, limit, fn) {
-  const results = new Array(items.length);
-  let index = 0;
-  async function worker() {
-    while (index < items.length) {
-      const i = index++;
-      results[i] = await fn(items[i]);
-    }
-  }
-  await Promise.all(Array.from({ length: limit }, worker));
-  return results;
-}
-
-// category는 클라이언트에서 l10n 키로 이미 처리 중이라 여기서 손댈 필요 없음
-async function translateFields(item) {
-  const translations = {};
-  await Promise.all(
-    TARGET_LANGS.map(async (lang) => {
-      const [name, reason, store, discountInfo] = await Promise.all([
-        translateText(item.name, lang).then((r) => r.translatedText),
-        translateText(item.reason, lang).then((r) => r.translatedText),
-        translateText(item.store, lang).then((r) => r.translatedText),
-        item.discountInfo
-          ? translateText(item.discountInfo, lang).then((r) => r.translatedText)
-          : Promise.resolve(undefined),
-      ]);
-      translations[lang] = discountInfo ? { name, reason, store, discountInfo } : { name, reason, store };
-    })
-  );
-  return translations;
 }
 
 // items.json은 유효한 단일 JSON이 아니라 배열 [...] 3개가 그냥 이어붙여진 텍스트라서
@@ -66,12 +34,36 @@ async function main() {
   const raw = fs.readFileSync(ITEMS_JSON_PATH, 'utf8');
   const items = parseConcatenatedArrays(raw);
 
-  const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+  const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: AWS_REGION }));
+  const translate = new TranslateClient({ region: AWS_REGION });
+  const translationCache = new Map();
 
-  console.log(`translating ${items.length} products into ${TARGET_LANGS.join(', ')}...`);
-  await mapWithConcurrency(items, CONCURRENCY, async (item) => {
-    const translations = await translateFields(item);
+  async function translateText(text, targetLanguage) {
+    if (!text || !String(text).trim()) return null;
+    const cacheKey = `${targetLanguage}:${text}`;
+    if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
+    const request = translate.send(new TranslateTextCommand({
+      Text: String(text),
+      SourceLanguageCode: 'ko',
+      TargetLanguageCode: targetLanguage,
+      ...(TERMINOLOGY_NAME ? { TerminologyNames: [TERMINOLOGY_NAME] } : {}),
+    })).then((result) => result.TranslatedText);
+    translationCache.set(cacheKey, request);
+    return request;
+  }
 
+  async function buildTranslations(item) {
+    const languageEntries = await Promise.all(TARGET_LANGUAGES.map(async (language) => {
+      const fieldEntries = await Promise.all(TRANSLATED_FIELDS.map(async (field) => {
+        const translated = await translateText(item[field], language);
+        return translated ? [field, translated] : null;
+      }));
+      return [language, Object.fromEntries(fieldEntries.filter(Boolean))];
+    }));
+    return Object.fromEntries(languageEntries);
+  }
+
+  for (const item of items) {
     const record = {
       itemId: item.itemId,
       category: item.category,
@@ -80,13 +72,14 @@ async function main() {
       store: item.store,
       reason: item.reason,
       imageUrl: item.imageUrl,
-      translations,
+      translations: await buildTranslations(item),
+      translatedAt: new Date().toISOString(),
     };
     if (item.discountInfo) record.discountInfo = item.discountInfo;
 
     await client.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
-    console.log(`seeded ${record.itemId}`);
-  });
+    console.log(`seeded and translated ${record.itemId}`);
+  }
 
   console.log(`done - ${items.length} products written to ${TABLE_NAME}`);
 }

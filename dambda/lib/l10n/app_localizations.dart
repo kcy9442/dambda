@@ -198,6 +198,12 @@ abstract class AppLocalizations {
   /// **'가입하기'**
   String get signupButton;
 
+  /// No description provided for @signupSuccessMessage.
+  ///
+  /// In ko, this message translates to:
+  /// **'{nickname} 님 환영합니다. 가입한 계정으로 로그인해주세요.'**
+  String signupSuccessMessage(String nickname);
+
   /// No description provided for @retryButton.
   ///
   /// In ko, this message translates to:
@@ -209,6 +215,12 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'상품을 찾을 수 없어요.'**
   String get productNotFound;
+
+  /// No description provided for @storeLabel.
+  ///
+  /// In ko, this message translates to:
+  /// **'파는 곳'**
+  String get storeLabel;
 
   /// No description provided for @homeBannerTitle.
   ///

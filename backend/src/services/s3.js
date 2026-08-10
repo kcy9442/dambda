@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const config = require('../config');
 
-const client = new S3Client({ region: config.awsRegion });
+const client = new S3Client({ region: config.resourceRegion });
 
 function extensionFor(mimeType) {
   if (mimeType === 'image/png') return 'png';
@@ -36,4 +36,31 @@ async function deleteReviewPhoto(key) {
   );
 }
 
-module.exports = { uploadReviewPhoto, deleteReviewPhoto };
+async function uploadProductImage(buffer, mimeType) {
+  const key = `products/${crypto.randomUUID()}.${extensionFor(mimeType)}`;
+  await client.send(new PutObjectCommand({
+    Bucket: config.productImagesBucket,
+    Key: key,
+    Body: buffer,
+    ContentType: mimeType,
+  }));
+  return {
+    key,
+    url: `https://${config.productImagesDomain}/${key}`,
+  };
+}
+
+async function deleteProductImage(key) {
+  if (!key) return;
+  await client.send(new DeleteObjectCommand({
+    Bucket: config.productImagesBucket,
+    Key: key,
+  }));
+}
+
+module.exports = {
+  uploadReviewPhoto,
+  deleteReviewPhoto,
+  uploadProductImage,
+  deleteProductImage,
+};

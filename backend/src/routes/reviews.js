@@ -62,6 +62,7 @@ function handleUpload(req, res, next) {
 }
 
 router.get('/', asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const items = await reviews.queryReviewsByProduct(req.params.productId);
   const reviewCount = items.length;
   const averageRating = reviewCount === 0

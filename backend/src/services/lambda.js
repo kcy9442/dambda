@@ -1,7 +1,7 @@
 const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
 const config = require('../config');
 
-const client = new LambdaClient({ region: config.awsRegion });
+const client = new LambdaClient({ region: config.resourceRegion });
 
 // 검열 Lambda를 동기 호출. Lambda 쪽이 이미 fail-closed로 설계되어 있어서, 여기서 호출 자체가
 // 실패하는 경우(타임아웃 등)도 같은 원칙으로 승인하지 않음

@@ -27,7 +27,13 @@ class AuthTokens {
 }
 
 class AuthService {
-  Uri _uri(String path) => Uri.parse('$apiBaseUrl$path');
+  Uri _uri(String path) {
+    final base = apiBaseUrl.endsWith('/')
+        ? apiBaseUrl.substring(0, apiBaseUrl.length - 1)
+        : apiBaseUrl;
+    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    return Uri.parse('$base$normalizedPath');
+  }
 
   Future<void> signup({
     required String email,
@@ -52,7 +58,10 @@ class AuthService {
     }
   }
 
-  Future<AuthTokens> login({required String email, required String password}) async {
+  Future<AuthTokens> login({
+    required String email,
+    required String password,
+  }) async {
     final response = await http
         .post(
           _uri('/auth/login'),
@@ -63,13 +72,62 @@ class AuthService {
     if (response.statusCode != 200) {
       throw ApiException(response.statusCode, _errorMessage(response));
     }
-    return AuthTokens.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    return AuthTokens.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<void> requestPasswordReset(String email) async {
+    final response = await http
+        .post(
+          _uri('/auth/password/forgot'),
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email}),
+        )
+        .timeout(requestTimeout, onTimeout: timeoutError);
+    if (response.statusCode != 204) {
+      throw ApiException(response.statusCode, _errorMessage(response));
+    }
+  }
+
+  Future<void> confirmPasswordReset({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final response = await http
+        .post(
+          _uri('/auth/password/confirm'),
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email,
+            'code': code,
+            'newPassword': newPassword,
+          }),
+        )
+        .timeout(requestTimeout, onTimeout: timeoutError);
+    if (response.statusCode != 204) {
+      throw ApiException(response.statusCode, _errorMessage(response));
+    }
   }
 
   Future<Map<String, dynamic>> me(String accessToken) async {
     final response = await http
         .get(
           _uri('/auth/me'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        )
+        .timeout(requestTimeout, onTimeout: timeoutError);
+    if (response.statusCode != 200) {
+      throw ApiException(response.statusCode, _errorMessage(response));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> completeSocialSession(String accessToken) async {
+    final response = await http
+        .post(
+          _uri('/auth/social/session'),
           headers: {'Authorization': 'Bearer $accessToken'},
         )
         .timeout(requestTimeout, onTimeout: timeoutError);

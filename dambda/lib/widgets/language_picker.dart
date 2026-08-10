@@ -24,13 +24,16 @@ Future<void> showLanguagePicker(BuildContext context) async {
               padding: const EdgeInsets.all(16),
               child: Text(
                 l10n.languagePickerTitle,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             for (final (code, label) in _languages)
               ListTile(
                 title: Text(label),
-                trailing: localeState.locale?.languageCode == code
+                trailing: localeState.locale.languageCode == code
                     ? const Icon(Icons.check, color: AppColors.primary)
                     : null,
                 onTap: () {

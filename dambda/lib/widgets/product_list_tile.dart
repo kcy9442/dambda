@@ -7,11 +7,14 @@ class ProductListTile extends StatelessWidget {
   final Product product;
   final VoidCallback onTap;
 
-  const ProductListTile({super.key, required this.product, required this.onTap});
+  const ProductListTile({
+    super.key,
+    required this.product,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final lang = Localizations.localeOf(context).languageCode;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -26,7 +29,9 @@ class ProductListTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.nameFor(lang),
+                    product.localizedName(
+                      Localizations.localeOf(context).languageCode,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -38,7 +43,9 @@ class ProductListTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    product.priceLabel,
+                    product.localizedPriceLabel(
+                      Localizations.localeOf(context).languageCode,
+                    ),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,

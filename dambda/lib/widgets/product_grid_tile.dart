@@ -19,7 +19,6 @@ class ProductGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang = Localizations.localeOf(context).languageCode;
     return InkWell(
       onTap: onTap,
       child: Column(
@@ -51,14 +50,16 @@ class ProductGridTile extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            product.nameFor(lang),
+            product.localizedName(Localizations.localeOf(context).languageCode),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 2),
           Text(
-            product.priceLabel,
+            product.localizedPriceLabel(
+              Localizations.localeOf(context).languageCode,
+            ),
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,

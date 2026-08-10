@@ -44,6 +44,20 @@ resource "aws_cognito_user_pool_client" "app_client" {
     "ALLOW_REFRESH_TOKEN_AUTH",
   ]
 
+  # 이메일 로그인과 소셜 로그인을 함께 제공한다. Google/Facebook 공급자는 각 개발자
+  # 콘솔에서 발급한 Client ID/Secret을 등록한 뒤 이 목록에 추가한다.
+  supported_identity_providers         = ["COGNITO", "Google"]
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes = [
+    "openid",
+    "email",
+    "profile",
+    "aws.cognito.signin.user.admin",
+  ]
+  callback_urls = ["https://d2184j0xiqu4yb.cloudfront.net/auth/callback"]
+  logout_urls   = ["https://d2184j0xiqu4yb.cloudfront.net/login"]
+
   prevent_user_existence_errors = "ENABLED"
 
   access_token_validity  = 60
@@ -56,3 +70,19 @@ resource "aws_cognito_user_pool_client" "app_client" {
     refresh_token = "days"
   }
 }
+
+# Google/Facebook 등 외부 공급자가 인증 결과를 돌려보낼 Cognito OAuth 도메인.
+resource "aws_cognito_user_pool_domain" "login" {
+  domain       = "dambda-${data.aws_caller_identity.current.account_id}"
+  user_pool_id = aws_cognito_user_pool.users.id
+}
+
+resource "aws_cognito_user_group" "admins" {
+  name         = "admins"
+  user_pool_id = aws_cognito_user_pool.users.id
+  description  = "DAMBDA administrator accounts"
+  precedence   = 1
+}
+
+data "aws_caller_identity" "current" {}
+

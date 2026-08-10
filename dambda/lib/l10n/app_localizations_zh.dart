@@ -21,7 +21,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navMy => '我的';
 
   @override
-  String get emailLabel => '账号（邮箱）';
+  String get emailLabel => '电子邮箱';
 
   @override
   String get passwordLabel => '密码';
@@ -30,10 +30,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get loginButton => '登录';
 
   @override
-  String get loginFailedDefault => '登录失败了。';
+  String get loginFailedDefault => '登录失败。';
 
   @override
-  String get noAccountSignupPrompt => '还没有账号？注册';
+  String get noAccountSignupPrompt => '还没有账号？立即注册';
 
   @override
   String get signupTitle => '注册';
@@ -42,31 +42,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nicknameLabel => '昵称';
 
   @override
-  String get countryLabel => '国家';
+  String get countryLabel => '国家或地区';
 
   @override
-  String get passwordHelper => '请输入8位以上，包含大小写字母和数字。';
+  String get passwordHelper => '至少8个字符，并包含大小写字母和数字。';
 
   @override
-  String get countryRequiredError => '请选择国家。';
+  String get countryRequiredError => '请选择国家或地区。';
 
   @override
-  String get signupFailedDefault => '注册失败了。';
+  String get signupFailedDefault => '注册失败。';
 
   @override
   String get signupButton => '注册';
 
   @override
+  String signupSuccessMessage(String nickname) {
+    return '欢迎你，$nickname。请使用新账号登录。';
+  }
+
+  @override
   String get retryButton => '重试';
 
   @override
-  String get productNotFound => '找不到该商品。';
+  String get productNotFound => '未找到商品。';
 
   @override
-  String get homeBannerTitle => '来韩国的话，一定要带上这些';
+  String get storeLabel => '购买地点';
 
   @override
-  String get homeBannerSubtitle => '旅行者认可的零食和纪念品';
+  String get homeBannerTitle => '来到韩国，这些商品不容错过';
+
+  @override
+  String get homeBannerSubtitle => '旅行者喜爱的零食和伴手礼';
 
   @override
   String get categoryAll => '全部';
@@ -75,7 +83,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get categorySnack => '零食';
 
   @override
-  String get categoryCosmetic => '化妆品';
+  String get categoryCosmetic => '美妆';
 
   @override
   String get categoryLiving => '生活用品';
@@ -84,10 +92,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get likesEmpty => '还没有收藏的商品';
 
   @override
-  String get guestName => '访客旅行者';
+  String get guestName => '游客';
 
   @override
-  String get guestSubtitle => '在DAMBDA整理您浏览过的商品';
+  String get guestSubtitle => '在DAMBDA整理你浏览过的商品';
 
   @override
   String get statLikes => '收藏';
@@ -102,10 +110,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get menuOrders => '订单记录';
 
   @override
-  String get menuSupport => '客服中心';
+  String get menuSupport => '客户服务';
 
   @override
-  String get menuAbout => '应用信息';
+  String get menuAbout => '关于应用';
 
   @override
   String get menuLogout => '退出登录';
@@ -119,13 +127,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get reviewsEmpty => '还没有评价，写下第一条评价吧！';
+  String get reviewsEmpty => '暂无评价，快来发表第一条评价吧！';
 
   @override
   String get deleteReviewTitle => '删除评价';
 
   @override
-  String get deleteReviewContent => '确定要删除吗？无法恢复。';
+  String get deleteReviewContent => '确定要删除吗？此操作无法撤销。';
 
   @override
   String get cancel => '取消';
@@ -134,16 +142,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get delete => '删除';
 
   @override
-  String get reviewValidationError => '请输入星级评分和评价内容。';
+  String get reviewValidationError => '请填写评分和评价内容。';
 
   @override
-  String get reviewFormTitleNew => '写评价';
+  String get reviewFormTitleNew => '发表评价';
 
   @override
   String get reviewFormTitleEdit => '编辑评价';
 
   @override
-  String get reviewHint => '这件商品怎么样？';
+  String get reviewHint => '这款商品怎么样？';
 
   @override
   String get attachPhoto => '添加照片（可选）';
@@ -152,5 +160,5 @@ class AppLocalizationsZh extends AppLocalizations {
   String get submitReview => '提交评价';
 
   @override
-  String get updateReview => '修改评价';
+  String get updateReview => '更新评价';
 }

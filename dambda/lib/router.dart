@@ -9,6 +9,9 @@ import 'screens/main_shell.dart';
 import 'screens/my_screen.dart';
 import 'screens/product_detail_screen.dart';
 import 'screens/signup_screen.dart';
+import 'screens/account_recovery_screen.dart';
+import 'screens/oauth_callback_screen.dart';
+import 'screens/admin_screen.dart';
 import 'state/auth_state.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -29,7 +32,8 @@ List<RouteBase> _productDetailRoutes() => [
   GoRoute(
     path: 'product/:id',
     parentNavigatorKey: rootNavigatorKey,
-    builder: (context, state) => ProductDetailScreen(productId: state.pathParameters['id']!),
+    builder: (context, state) =>
+        ProductDetailScreen(productId: state.pathParameters['id']!),
   ),
 ];
 
@@ -49,8 +53,12 @@ final GoRouter router = GoRouter(
   refreshListenable: authState,
   redirect: (context, state) {
     final loggedIn = authState.isLoggedIn;
-    final onAuthPage =
-        state.matchedLocation == '/login' || state.matchedLocation == '/signup';
+    final onAuthPage = {
+      '/login',
+      '/signup',
+      '/account-recovery',
+      '/auth/callback',
+    }.contains(state.matchedLocation);
     if (!loggedIn && !onAuthPage) return '/login';
     if (loggedIn && onAuthPage) return '/';
     return null;
@@ -58,6 +66,15 @@ final GoRouter router = GoRouter(
   routes: [
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
+    GoRoute(
+      path: '/account-recovery',
+      builder: (context, state) => const AccountRecoveryScreen(),
+    ),
+    GoRoute(
+      path: '/auth/callback',
+      builder: (context, state) => const OAuthCallbackScreen(),
+    ),
+    GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           MainShell(navigationShell: navigationShell),
@@ -90,7 +107,9 @@ final GoRouter router = GoRouter(
           ],
         ),
         StatefulShellBranch(
-          routes: [GoRoute(path: '/my', builder: (context, state) => const MyScreen())],
+          routes: [
+            GoRoute(path: '/my', builder: (context, state) => const MyScreen()),
+          ],
         ),
       ],
     ),

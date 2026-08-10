@@ -1,4 +1,4 @@
-const { PutCommand, GetCommand, QueryCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, GetCommand, ScanCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const config = require('../config');
 const client = require('./dynamoClient');
 
@@ -45,16 +45,37 @@ async function deleteReview(userId, productId) {
 }
 
 async function queryReviewsByProduct(productId) {
-  const result = await client.send(
-    new QueryCommand({
-      TableName: config.productReviewsTableName,
-      IndexName: 'product-reviews-by-product',
-      KeyConditionExpression: 'productId = :p',
-      ExpressionAttributeValues: { ':p': productId },
-      ScanIndexForward: false,
-    })
-  );
-  return result.Items || [];
+  const items = [];
+  let exclusiveStartKey;
+  do {
+    const result = await client.send(
+      new ScanCommand({
+        TableName: config.productReviewsTableName,
+        ConsistentRead: true,
+        FilterExpression: 'productId = :p',
+        ExpressionAttributeValues: { ':p': productId },
+        ExclusiveStartKey: exclusiveStartKey,
+      })
+    );
+    items.push(...(result.Items || []));
+    exclusiveStartKey = result.LastEvaluatedKey;
+  } while (exclusiveStartKey);
+
+  return items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
-module.exports = { getReview, putReview, updateReview, deleteReview, queryReviewsByProduct };
+async function listAllReviews() {
+  const items = [];
+  let ExclusiveStartKey;
+  do {
+    const result = await client.send(new ScanCommand({
+      TableName: config.productReviewsTableName,
+      ExclusiveStartKey,
+    }));
+    items.push(...(result.Items || []));
+    ExclusiveStartKey = result.LastEvaluatedKey;
+  } while (ExclusiveStartKey);
+  return items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+}
+
+module.exports = { getReview, putReview, updateReview, deleteReview, queryReviewsByProduct, listAllReviews };

@@ -38,7 +38,9 @@ class AuthState extends ChangeNotifier {
     try {
       await _storage.write(key: _accessTokenKey, value: token);
     } catch (e) {
-      debugPrint('secure storage write failed (non-fatal, session will not survive refresh): $e');
+      debugPrint(
+        'secure storage write failed (non-fatal, session will not survive refresh): $e',
+      );
     }
   }
 
@@ -79,10 +81,14 @@ class AuthState extends ChangeNotifier {
         nickname: nickname,
         country: country,
       );
-      // 자동 로그인하지 않음 - 가입 후 로그인 화면으로 보내서 직접 로그인하게 함 (signup_screen.dart)
+      // Keep the new account signed out so the user explicitly logs in.
       return true;
     } on ApiException catch (e) {
       lastError = e.message;
+      return false;
+    } catch (e) {
+      debugPrint('signup failed: $e');
+      lastError = '서버에 연결할 수 없어요. 잠시 후 다시 시도해주세요.';
       return false;
     } finally {
       isLoading = false;
@@ -102,6 +108,32 @@ class AuthState extends ChangeNotifier {
       return true;
     } on ApiException catch (e) {
       lastError = e.message;
+      return false;
+    } catch (e) {
+      debugPrint('login failed: $e');
+      lastError = '서버에 연결할 수 없어요. 잠시 후 다시 시도해주세요.';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> completeSocialLogin(String accessToken) async {
+    isLoading = true;
+    lastError = null;
+    notifyListeners();
+    try {
+      _accessToken = accessToken;
+      final json = await _authService.completeSocialSession(accessToken);
+      profile = UserProfile.fromJson(json);
+      await _writeToken(accessToken);
+      unawaited(appState.loadMyLikes(accessToken));
+      return true;
+    } catch (e) {
+      debugPrint('social login failed: $e');
+      await _clearSession();
+      lastError = 'Google 로그인 처리에 실패했어요.';
       return false;
     } finally {
       isLoading = false;

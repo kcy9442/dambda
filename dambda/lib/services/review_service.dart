@@ -11,7 +11,13 @@ import 'http_timeout.dart';
 const _uploadTimeout = Duration(seconds: 30);
 
 class ReviewService {
-  Uri _uri(String path) => Uri.parse('$apiBaseUrl$path');
+  Uri _uri(String path) {
+    final base = apiBaseUrl.endsWith('/')
+        ? apiBaseUrl.substring(0, apiBaseUrl.length - 1)
+        : apiBaseUrl;
+    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    return Uri.parse('$base$normalizedPath');
+  }
 
   Future<ReviewsResult> list(String productId, {String? lang}) async {
     final uri = _uri('/products/$productId/reviews');
@@ -21,7 +27,9 @@ class ReviewService {
     if (response.statusCode != 200) {
       throw ApiException(response.statusCode, _errorMessage(response));
     }
-    return ReviewsResult.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    return ReviewsResult.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
   }
 
   Future<Review> submit({
@@ -33,10 +41,11 @@ class ReviewService {
     String? photoFilename,
     String? photoMimeType,
   }) async {
-    final request = http.MultipartRequest('POST', _uri('/products/$productId/reviews'))
-      ..headers['Authorization'] = 'Bearer $token'
-      ..fields['rating'] = rating.toString()
-      ..fields['text'] = text;
+    final request =
+        http.MultipartRequest('POST', _uri('/products/$productId/reviews'))
+          ..headers['Authorization'] = 'Bearer $token'
+          ..fields['rating'] = rating.toString()
+          ..fields['text'] = text;
 
     if (photoBytes != null) {
       request.files.add(
@@ -51,8 +60,10 @@ class ReviewService {
       );
     }
 
-    final streamedResponse =
-        await request.send().timeout(_uploadTimeout, onTimeout: timeoutError);
+    final streamedResponse = await request.send().timeout(
+      _uploadTimeout,
+      onTimeout: timeoutError,
+    );
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode != 201) {
@@ -71,11 +82,12 @@ class ReviewService {
     String? photoMimeType,
     bool removePhoto = false,
   }) async {
-    final request = http.MultipartRequest('PUT', _uri('/products/$productId/reviews'))
-      ..headers['Authorization'] = 'Bearer $token'
-      ..fields['rating'] = rating.toString()
-      ..fields['text'] = text
-      ..fields['removePhoto'] = removePhoto.toString();
+    final request =
+        http.MultipartRequest('PUT', _uri('/products/$productId/reviews'))
+          ..headers['Authorization'] = 'Bearer $token'
+          ..fields['rating'] = rating.toString()
+          ..fields['text'] = text
+          ..fields['removePhoto'] = removePhoto.toString();
 
     if (photoBytes != null) {
       request.files.add(
@@ -88,8 +100,10 @@ class ReviewService {
       );
     }
 
-    final streamedResponse =
-        await request.send().timeout(_uploadTimeout, onTimeout: timeoutError);
+    final streamedResponse = await request.send().timeout(
+      _uploadTimeout,
+      onTimeout: timeoutError,
+    );
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode != 200) {
@@ -98,7 +112,10 @@ class ReviewService {
     return Review.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
-  Future<void> delete({required String token, required String productId}) async {
+  Future<void> delete({
+    required String token,
+    required String productId,
+  }) async {
     final response = await http
         .delete(
           _uri('/products/$productId/reviews'),

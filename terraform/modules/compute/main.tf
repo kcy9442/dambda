@@ -47,6 +47,19 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+resource "aws_iam_role_policy" "ecs_execution_secrets" {
+  name = "${var.region_name}-ecs-tavily-secret"
+  role = aws_iam_role.ecs_task_execution_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = ["secretsmanager:GetSecretValue"]
+      Effect   = "Allow"
+      Resource = var.tavily_api_key_secret_arn
+    }]
+  })
+}
+
 # 앱 태스크 역할 (Lambda 호출 및 추후 AMP 권한 확보)
 resource "aws_iam_role" "ecs_task_role" {
   name = "${var.region_name}-ecs-task-role"
@@ -82,6 +95,7 @@ locals {
         "cognito-idp:AdminInitiateAuth",
         "cognito-idp:AdminGetUser",
         "cognito-idp:GetUser",
+        "cognito-idp:AdminListGroupsForUser",
       ]
       Effect   = "Allow"
       Resource = var.user_pool_arn
@@ -98,9 +112,15 @@ locals {
 
   product_reviews_statements = var.product_reviews_table_arn != "" ? [
     {
-      Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+      Action = [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+      ]
       Effect = "Allow"
-      # product-reviews-by-product GSI에 Query를 날리므로 base table ARN만으로는 부족
+      # 목록은 강한 일관성의 base table Scan, 인덱스는 호환용 Query에 사용한다.
       Resource = [var.product_reviews_table_arn, "${var.product_reviews_table_arn}/index/*"]
     }
   ] : []
@@ -127,11 +147,17 @@ locals {
   # 직접 자기 자격증명으로 실행하므로 태스크 역할에는 Put/Delete를 주지 않음
   product_catalog_statements = var.product_catalog_table_arn != "" ? [
     {
-      Action   = ["dynamodb:GetItem", "dynamodb:Scan"]
+      Action   = ["dynamodb:GetItem", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:DeleteItem"]
       Effect   = "Allow"
       Resource = var.product_catalog_table_arn
     }
   ] : []
+
+  product_images_statements = var.product_images_bucket_arn != "" ? [{
+    Action   = ["s3:PutObject", "s3:DeleteObject"]
+    Effect   = "Allow"
+    Resource = "${var.product_images_bucket_arn}/*"
+  }] : []
 }
 
 # AMP + 로그인·회원가입/좋아요/리뷰 백엔드가 쓰는 DynamoDB/Cognito/S3/Lambda 권한
@@ -162,6 +188,7 @@ resource "aws_iam_policy" "ecs_task_policy" {
       local.review_photos_statements,
       local.moderation_lambda_statements,
       local.product_catalog_statements,
+      local.product_images_statements,
     )
   })
 }
@@ -216,6 +243,7 @@ resource "aws_ecs_task_definition" "main" {
       environment = [
         { name = "PORT", value = tostring(var.container_port) },
         { name = "AWS_REGION", value = var.aws_region },
+        { name = "RESOURCE_REGION", value = var.resource_region != "" ? var.resource_region : var.aws_region },
         { name = "USER_POOL_ID", value = var.user_pool_id },
         { name = "USER_POOL_CLIENT_ID", value = var.user_pool_client_id },
         { name = "DYNAMODB_TABLE_NAME", value = var.dynamodb_table_name },
@@ -225,6 +253,11 @@ resource "aws_ecs_task_definition" "main" {
         { name = "S3_REVIEW_PHOTOS_DOMAIN", value = var.review_photos_bucket_domain },
         { name = "MODERATION_LAMBDA_NAME", value = var.moderation_lambda_name },
         { name = "PRODUCT_CATALOG_TABLE_NAME", value = var.product_catalog_table_name },
+        { name = "S3_PRODUCT_IMAGES_BUCKET", value = var.product_images_bucket_name },
+        { name = "S3_PRODUCT_IMAGES_DOMAIN", value = var.product_images_bucket_domain },
+      ]
+      secrets = var.tavily_api_key_secret_arn == "" ? [] : [
+        { name = "TAVILY_API_KEY", valueFrom = var.tavily_api_key_secret_arn }
       ]
       logConfiguration = {
         logDriver = "awslogs"
