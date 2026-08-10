@@ -32,17 +32,26 @@ class _AdminScreenState extends State<AdminScreen>
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
+    _tabs.addListener(_handleTabChange);
     appState.loadProducts();
     _loadReviews();
   }
 
   @override
   void dispose() {
+    _tabs.removeListener(_handleTabChange);
     _tabs.dispose();
     for (final controller in [_name, _price, _store, _reason, _discount]) {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  void _handleTabChange() {
+    if (!_tabs.indexIsChanging && _tabs.index == 0 && !_loading) {
+      _loadReviews();
+    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadReviews() async {
@@ -130,6 +139,14 @@ class _AdminScreenState extends State<AdminScreen>
           icon: const Icon(Icons.arrow_back),
         ),
         title: const Text('관리자 페이지'),
+        actions: [
+          if (_tabs.index == 0)
+            IconButton(
+              tooltip: '리뷰 새로고침',
+              onPressed: _loading ? null : _loadReviews,
+              icon: const Icon(Icons.refresh),
+            ),
+        ],
         bottom: TabBar(
           controller: _tabs,
           tabs: const [
@@ -156,7 +173,22 @@ class _AdminScreenState extends State<AdminScreen>
         ),
       );
     }
-    if (_reviews.isEmpty) return const Center(child: Text('등록된 리뷰가 없습니다.'));
+    if (_reviews.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('등록된 리뷰가 없습니다.'),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _loadReviews,
+              icon: const Icon(Icons.refresh),
+              label: const Text('다시 불러오기'),
+            ),
+          ],
+        ),
+      );
+    }
     return RefreshIndicator(
       onRefresh: _loadReviews,
       child: ListView.separated(
