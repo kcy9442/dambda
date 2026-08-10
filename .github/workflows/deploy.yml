@@ -100,4 +100,4 @@ jobs:
       - name: API smoke test
         env:
           API: ${{ steps.tf.outputs.api }}
-        run: curl --fail --retry 6 --retry-delay 10 "$API/"
+        run: curl --fail --retry 6 --retry-delay 10 "${API%/}/"
