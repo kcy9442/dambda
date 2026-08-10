@@ -32,9 +32,10 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 locals {
-  repository = "repo:${var.github_owner}/${var.github_repository}"
-  oidc_arn   = aws_iam_openid_connect_provider.github.arn
-  state_arn  = aws_s3_bucket.state.arn
+  repository          = "repo:${var.github_owner}/${var.github_repository}"
+  repository_with_ids = "repo:${var.github_owner}@*/${var.github_repository}@*"
+  oidc_arn            = aws_iam_openid_connect_provider.github.arn
+  state_arn           = aws_s3_bucket.state.arn
 }
 
 data "aws_iam_policy_document" "plan_trust" {
@@ -52,7 +53,12 @@ data "aws_iam_policy_document" "plan_trust" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["${local.repository}:pull_request", "${local.repository}:environment:dev-plan"]
+      values = [
+        "${local.repository}:pull_request",
+        "${local.repository}:environment:dev-plan",
+        "${local.repository_with_ids}:pull_request",
+        "${local.repository_with_ids}:environment:dev-plan",
+      ]
     }
   }
 }
@@ -70,9 +76,12 @@ data "aws_iam_policy_document" "deploy_trust" {
       values   = ["sts.amazonaws.com"]
     }
     condition {
-      test     = "StringEquals"
+      test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["${local.repository}:environment:production"]
+      values = [
+        "${local.repository}:environment:production",
+        "${local.repository_with_ids}:environment:production",
+      ]
     }
   }
 }
