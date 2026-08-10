@@ -61,10 +61,17 @@ jobs:
           TF_VAR_bedrock_guardrail_profile_identifier: ${{ vars.BEDROCK_GUARDRAIL_PROFILE_ARN }}
         shell: bash
         run: |
-          terraform apply -input=false -auto-approve \
-            -target=module.compute.aws_ecr_repository.backend \
-            -target=module.compute.aws_iam_role_policy.ecs_execution_secrets \
-            -target=aws_secretsmanager_secret.tavily_api_key
+          # The targeted apply is only needed for a brand-new environment.
+          # On an existing stack it can conflict with Terraform moved blocks.
+          if aws ecr describe-repositories --repository-names my-app-dev-backend >/dev/null 2>&1 && \
+             aws secretsmanager describe-secret --secret-id my-app-dev/tavily-api-key >/dev/null 2>&1; then
+            echo "Bootstrap resources already exist; skipping targeted apply."
+          else
+            terraform apply -input=false -auto-approve \
+              -target=module.compute.aws_ecr_repository.backend \
+              -target=module.compute.aws_iam_role_policy.ecs_execution_secrets \
+              -target=aws_secretsmanager_secret.tavily_api_key
+          fi
           secret_arn="$(terraform output -raw tavily_secret_arn)"
           aws secretsmanager put-secret-value --secret-id "$secret_arn" --secret-string "$TAVILY_API_KEY" >/dev/null
           echo "ecr=$(terraform output -raw backend_ecr_repository_url)" >> "$GITHUB_OUTPUT"
