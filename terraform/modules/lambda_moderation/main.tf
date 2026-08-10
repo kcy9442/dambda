@@ -84,7 +84,7 @@ resource "aws_iam_policy" "moderation_lambda_policy" {
     Statement = [
       {
         # Rekognition/Comprehend는 리소스 레벨 ARN을 지원하지 않는 AWS API 자체의 제약 - "*"가 맞음
-        Action   = ["rekognition:DetectModerationLabels"]
+        Action   = ["rekognition:DetectModerationLabels", "comprehend:DetectToxicContent"]
         Effect   = "Allow"
         Resource = "*"
       },
@@ -119,8 +119,9 @@ resource "aws_lambda_function" "moderation" {
 
   environment {
     variables = {
-      BEDROCK_GUARDRAIL_ID      = aws_bedrock_guardrail.reviews.guardrail_id
-      BEDROCK_GUARDRAIL_VERSION = aws_bedrock_guardrail_version.reviews.version
+      BEDROCK_GUARDRAIL_ID          = aws_bedrock_guardrail.reviews.guardrail_id
+      BEDROCK_GUARDRAIL_VERSION     = aws_bedrock_guardrail_version.reviews.version
+      COMPREHEND_TOXICITY_THRESHOLD = "0.80"
     }
   }
 }

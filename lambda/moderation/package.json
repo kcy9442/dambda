@@ -2,10 +2,11 @@
   "name": "dambda-moderation-lambda",
   "version": "1.0.0",
   "private": true,
-  "description": "Bedrock Guardrails + Rekognition moderation gate for product reviews",
+  "description": "Bedrock Guardrails + Comprehend + Rekognition moderation gate for product reviews",
   "main": "index.js",
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.658.0",
+    "@aws-sdk/client-comprehend": "^3.1106.0",
     "@aws-sdk/client-rekognition": "^3.658.0"
   }
 }
