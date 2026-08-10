@@ -7,3 +7,11 @@ output "lambda_name" {
   description = "검열 Lambda 함수 이름 (백엔드가 InvokeCommand 호출 시 사용)"
   value       = aws_lambda_function.moderation.function_name
 }
+
+output "guardrail_id" {
+  value = aws_bedrock_guardrail.reviews.guardrail_id
+}
+
+output "guardrail_version" {
+  value = aws_bedrock_guardrail_version.reviews.version
+}

@@ -1,5 +1,6 @@
 // 1회성 수동 스크립트. terraform apply로 product_catalog 테이블을 만든 뒤
-// `node backend/scripts/seed-products.js`로 직접 실행 (AWS 자격증명 필요).
+// `AWS_REGION=ap-northeast-2 node backend/scripts/seed-products.js`로 직접 실행
+// (AWS 자격증명 필요, translate:TranslateText 권한 포함).
 const fs = require('fs');
 const path = require('path');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');

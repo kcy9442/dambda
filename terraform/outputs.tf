@@ -23,6 +23,19 @@ output "backend_ecs_service_name" {
   value       = module.compute.service_name
 }
 
+output "review_guardrail_id" {
+  value = module.lambda_moderation.guardrail_id
+}
+
+output "review_guardrail_version" {
+  value = module.lambda_moderation.guardrail_version
+}
+
+output "tavily_secret_arn" {
+  description = "Store the rotated Tavily API key as the value of this secret"
+  value       = aws_secretsmanager_secret.tavily_api_key.arn
+}
+
 output "cognito_oauth_domain" {
   value = module.cognito.oauth_domain
 }

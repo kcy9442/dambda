@@ -104,3 +104,4 @@ resource "aws_vpc_endpoint" "dynamodb" {
   tags = { Name = "${var.region_name}-dynamodb-endpoint" }
 }
 
+

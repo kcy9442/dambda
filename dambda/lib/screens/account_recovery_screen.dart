@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
-import '../theme/app_theme.dart';
 import '../widgets/language_menu.dart';
 
 class AccountRecoveryScreen extends StatefulWidget {
@@ -25,8 +24,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
     final code = Localizations.localeOf(context).languageCode;
     return switch (code) {
       'en' => {
-        'title': 'Find account / Reset password',
-        'idInfo': 'Your login ID is the email address used when signing up.',
+        'title': 'Reset password',
         'send': 'Send verification code',
         'sent':
             'If the account exists, a verification code has been sent by email.',
@@ -38,8 +36,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
             'The request failed. Please check the information and try again.',
       },
       'ja' => {
-        'title': 'ID確認・パスワード再設定',
-        'idInfo': 'ログインIDは会員登録時に使用したメールアドレスです。',
+        'title': 'パスワード再設定',
         'send': '認証コードを送信',
         'sent': 'アカウントが存在する場合、メールで認証コードを送信しました。',
         'code': '認証コード',
@@ -49,8 +46,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
         'error': '処理に失敗しました。入力内容を確認してください。',
       },
       'zh' => {
-        'title': '找回账号 / 重置密码',
-        'idInfo': '登录账号是注册时使用的电子邮箱。',
+        'title': '重置密码',
         'send': '发送验证码',
         'sent': '如果账号存在，验证码已发送至邮箱。',
         'code': '验证码',
@@ -60,8 +56,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
         'error': '请求失败，请检查输入信息后重试。',
       },
       _ => {
-        'title': '아이디 찾기 / 비밀번호 재설정',
-        'idInfo': '로그인 아이디는 회원가입할 때 사용한 이메일 주소입니다.',
+        'title': '비밀번호 재설정',
         'send': '인증 코드 받기',
         'sent': '가입된 계정이라면 이메일로 인증 코드를 보냈습니다.',
         'code': '인증 코드',
@@ -143,15 +138,6 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(_text['idInfo']!),
-              ),
-              const SizedBox(height: 24),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,

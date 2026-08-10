@@ -36,6 +36,12 @@ variable "container_port" {
   default     = 80
 }
 
+variable "bedrock_guardrail_profile_identifier" {
+  description = "Bedrock Guardrails Standard cross-region inference profile ARN"
+  type        = string
+  default     = ""
+}
+
 # 미국(us-east-1) pilot-light 재해복구 리전 설정
 variable "us_aws_region" {
   description = "미국 재해복구 리전"

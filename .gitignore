@@ -10,13 +10,24 @@ npm-debug.log*
 
 # Terraform
 terraform/.terraform/
+terraform-bootstrap/.terraform/
 terraform/.tmp/
 terraform/*.tfstate
 terraform/*.tfstate.*
 terraform/*.tfplan
+terraform/**/*.tfplan
+terraform/*state*.json
+terraform/*plan*.txt
+*.tfplan
+*.tfstate
+*.tfstate.*
 terraform/crash.log
 terraform/crash.*.log
 terraform/override.tf
 terraform/override.tf.json
 terraform/*_override.tf
 terraform/*_override.tf.json
+
+# CI/CD output
+artifacts/
+tfplan

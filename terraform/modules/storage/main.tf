@@ -200,3 +200,4 @@ resource "aws_s3_bucket_cors_configuration" "product_images" {
     allowed_headers = ["*"]
   }
 }
+

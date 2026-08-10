@@ -81,7 +81,6 @@ class AuthState extends ChangeNotifier {
         nickname: nickname,
         country: country,
       );
-      // 가입 성공 후 같은 자격증명으로 바로 로그인해서 한 번에 이어감
       // Keep the new account signed out so the user explicitly logs in.
       return true;
     } on ApiException catch (e) {

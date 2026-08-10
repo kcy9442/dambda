@@ -1,3 +1,25 @@
+class ProductTranslation {
+  final String? name;
+  final String? reason;
+  final String? store;
+  final String? discountInfo;
+
+  const ProductTranslation({
+    this.name,
+    this.reason,
+    this.store,
+    this.discountInfo,
+  });
+
+  factory ProductTranslation.fromJson(Map<String, dynamic> json) =>
+      ProductTranslation(
+        name: json['name'] as String?,
+        reason: json['reason'] as String?,
+        store: json['store'] as String?,
+        discountInfo: json['discountInfo'] as String?,
+      );
+}
+
 class Product {
   final String id;
   final String name;
@@ -25,7 +47,9 @@ class Product {
     if (value is! Map) return const {};
     return value.map((language, fields) {
       final localizedFields = fields is Map
-          ? fields.map((field, text) => MapEntry(field.toString(), text.toString()))
+          ? fields.map(
+              (field, text) => MapEntry(field.toString(), text.toString()),
+            )
           : <String, String>{};
       return MapEntry(language.toString(), localizedFields);
     });
@@ -133,4 +157,9 @@ class Product {
     }
     return localized;
   }
+
+  String nameFor(String lang) => localizedName(lang);
+  String? reasonFor(String lang) => localizedReason(lang);
+  String storeFor(String lang) => localizedStore(lang);
+  String? discountInfoFor(String lang) => localizedDiscountInfo(lang);
 }

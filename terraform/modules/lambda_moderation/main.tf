@@ -6,6 +6,57 @@ data "archive_file" "moderation_lambda" {
   output_path = "${path.module}/moderation_lambda.zip"
 }
 
+locals {
+  guardrail_filter_types = ["HATE", "INSULTS", "SEXUAL", "VIOLENCE", "MISCONDUCT"]
+}
+
+resource "aws_bedrock_guardrail" "reviews" {
+  name                      = "${var.region_name}-review-moderation"
+  description               = "Multilingual moderation for DAMBDA product reviews"
+  blocked_input_messaging   = "등록할 수 없는 내용이 포함되어 있습니다."
+  blocked_outputs_messaging = "차단된 내용입니다."
+
+  content_policy_config {
+    dynamic "filters_config" {
+      for_each = toset(local.guardrail_filter_types)
+      content {
+        type            = filters_config.value
+        input_strength  = "MEDIUM"
+        output_strength = "MEDIUM"
+      }
+    }
+    tier_config {
+      tier_name = "STANDARD"
+    }
+  }
+
+  sensitive_information_policy_config {
+    pii_entities_config {
+      action = "BLOCK"
+      type   = "EMAIL"
+    }
+    pii_entities_config {
+      action = "BLOCK"
+      type   = "PHONE"
+    }
+  }
+
+  dynamic "cross_region_config" {
+    for_each = var.guardrail_profile_identifier == "" ? [] : [var.guardrail_profile_identifier]
+    content {
+      guardrail_profile_identifier = cross_region_config.value
+    }
+  }
+
+  tags = { Name = "${var.region_name}-review-moderation" }
+}
+
+resource "aws_bedrock_guardrail_version" "reviews" {
+  guardrail_arn = aws_bedrock_guardrail.reviews.guardrail_arn
+  description   = "Managed by Terraform"
+  skip_destroy  = true
+}
+
 resource "aws_iam_role" "moderation_lambda_role" {
   name = "${var.region_name}-moderation-lambda-role"
   assume_role_policy = jsonencode({
@@ -30,9 +81,14 @@ resource "aws_iam_policy" "moderation_lambda_policy" {
     Statement = [
       {
         # Rekognition/Comprehend는 리소스 레벨 ARN을 지원하지 않는 AWS API 자체의 제약 - "*"가 맞음
-        Action   = ["rekognition:DetectModerationLabels", "comprehend:DetectToxicContent"]
+        Action   = ["rekognition:DetectModerationLabels"]
         Effect   = "Allow"
         Resource = "*"
+      },
+      {
+        Action   = ["bedrock:ApplyGuardrail"]
+        Effect   = "Allow"
+        Resource = [aws_bedrock_guardrail.reviews.guardrail_arn, "${aws_bedrock_guardrail.reviews.guardrail_arn}/*"]
       },
       {
         Action   = ["s3:GetObject"]
@@ -57,4 +113,11 @@ resource "aws_lambda_function" "moderation" {
 
   filename         = data.archive_file.moderation_lambda.output_path
   source_code_hash = data.archive_file.moderation_lambda.output_base64sha256
+
+  environment {
+    variables = {
+      BEDROCK_GUARDRAIL_ID      = aws_bedrock_guardrail.reviews.guardrail_id
+      BEDROCK_GUARDRAIL_VERSION = aws_bedrock_guardrail_version.reviews.version
+    }
+  }
 }

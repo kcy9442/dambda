@@ -7,3 +7,9 @@ variable "review_photos_bucket_arn" {
   description = "리뷰 사진 S3 버킷 ARN (Lambda 실행 역할이 GetObject 하기 위함)"
   type        = string
 }
+
+variable "guardrail_profile_identifier" {
+  description = "Bedrock Guardrails Standard cross-region inference profile ARN"
+  type        = string
+  default     = ""
+}

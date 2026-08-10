@@ -81,14 +81,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
   }
 
+  bool _initialReviewsLoaded = false;
+
   @override
   void initState() {
     super.initState();
-    _loadReviews();
     // /product/:id로 직접 진입(딥링크, 새로고침)하면 MainShell을 안 거치므로
     // 거기서만 트리거되는 카탈로그 로드가 안 불릴 수 있어 여기서도 보장해줌
     if (appState.products.isEmpty && !appState.productsLoading) {
       appState.loadProducts();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Localizations.localeOf(context) 같은 InheritedWidget 조회는 initState()에서 하면
+    // "called before initState() completed" 예외가 남 - 프레임워크가 안내하는 대로
+    // didChangeDependencies()(initState 직후 자동 호출)에서 최초 1회만 로드
+    if (!_initialReviewsLoaded) {
+      _initialReviewsLoaded = true;
+      _loadReviews();
     }
   }
 
@@ -98,13 +111,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
+  // 웹에서는 상세 진입 시 push() 대신 go()를 써서(주소창 동기화를 위해) Navigator 스택에
+  // 이전 페이지가 쌓이지 않으므로 canPop()이 false - 이땐 현재 URL에서 "/product/:id" 접미사를
+  // 떼어내 원래 있던 탭(홈/카테고리/좋아요) 경로로 직접 이동한다.
+  void _goBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    final location = GoRouterState.of(context).uri.toString();
+    final suffix = '/product/${widget.productId}';
+    var parent = location.endsWith(suffix)
+        ? location.substring(0, location.length - suffix.length)
+        : '/';
+    if (parent.isEmpty) parent = '/';
+    context.go(parent);
+  }
+
   Future<void> _loadReviews() async {
     setState(() => _loadingReviews = true);
     try {
-      final result = await _reviewService.list(widget.productId);
+      final lang = Localizations.localeOf(context).languageCode;
+      final result = await _reviewService.list(widget.productId, lang: lang);
       if (mounted) setState(() => _result = result);
     } catch (_) {
-      // 조용히 실패 - 목록이 비어있는 것처럼 보일 뿐
+      // 조회 실패 시 목록은 비워둔 채로 두고 조용히 넘어감(로딩 인디케이터만 꺼짐)
     } finally {
       if (mounted) setState(() => _loadingReviews = false);
     }
@@ -264,12 +295,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
     final myUserId = authState.profile?.userId;
     final hasReviewed =
         _result?.reviews.any((r) => r.userId == myUserId) ?? false;
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => _goBack(context),
+        ),
         title: InkWell(
           onTap: () => context.go('/'),
           borderRadius: BorderRadius.circular(8),
@@ -332,7 +368,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          if (product.reason != null) ...[
+                          if (product.reasonFor(lang) != null) ...[
                             const SizedBox(height: 4),
                             Text(
                               product.localizedReason(
@@ -368,7 +404,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                                 ),
                               ),
-                              if (product.discountInfo != null) ...[
+                              if (product.discountInfoFor(lang) != null) ...[
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -383,7 +419,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                                   child: Text(
                                     product.localizedDiscountInfo(
-                                      Localizations.localeOf(context).languageCode,
+                                      Localizations.localeOf(
+                                        context,
+                                      ).languageCode,
                                     )!,
                                     style: const TextStyle(
                                       color: AppColors.primary,

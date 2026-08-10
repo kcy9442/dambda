@@ -31,3 +31,4 @@ output "review_photos_bucket_regional_domain" {
 output "product_images_bucket_name" { value = aws_s3_bucket.product_images.id }
 output "product_images_bucket_arn" { value = aws_s3_bucket.product_images.arn }
 output "product_images_bucket_domain" { value = aws_s3_bucket.product_images.bucket_regional_domain_name }
+

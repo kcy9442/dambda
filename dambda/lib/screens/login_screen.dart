@@ -6,6 +6,7 @@ import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/language_menu.dart';
 import '../services/social_auth_service.dart';
+import '../widgets/language_picker.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -62,6 +63,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language, color: AppColors.textPrimary),
+            onPressed: () => showLanguagePicker(context),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -200,8 +211,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () => context.go('/account-recovery'),
                       child: Text(
                         Localizations.localeOf(context).languageCode == 'ko'
-                            ? '아이디 찾기 / 비밀번호 찾기'
-                            : 'Find account / Reset password',
+                            ? '비밀번호 찾기'
+                            : 'Reset password',
                         style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     ),

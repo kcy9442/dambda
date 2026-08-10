@@ -47,6 +47,20 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+resource "aws_iam_role_policy" "ecs_execution_secrets" {
+  count = var.tavily_api_key_secret_arn == "" ? 0 : 1
+  name  = "${var.region_name}-ecs-tavily-secret"
+  role  = aws_iam_role.ecs_task_execution_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = ["secretsmanager:GetSecretValue"]
+      Effect   = "Allow"
+      Resource = var.tavily_api_key_secret_arn
+    }]
+  })
+}
+
 # 앱 태스크 역할 (Lambda 호출 및 추후 AMP 권한 확보)
 resource "aws_iam_role" "ecs_task_role" {
   name = "${var.region_name}-ecs-task-role"
@@ -234,6 +248,9 @@ resource "aws_ecs_task_definition" "main" {
         { name = "PRODUCT_CATALOG_TABLE_NAME", value = var.product_catalog_table_name },
         { name = "S3_PRODUCT_IMAGES_BUCKET", value = var.product_images_bucket_name },
         { name = "S3_PRODUCT_IMAGES_DOMAIN", value = var.product_images_bucket_domain },
+      ]
+      secrets = var.tavily_api_key_secret_arn == "" ? [] : [
+        { name = "TAVILY_API_KEY", valueFrom = var.tavily_api_key_secret_arn }
       ]
       logConfiguration = {
         logDriver = "awslogs"

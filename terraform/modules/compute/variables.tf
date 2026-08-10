@@ -162,3 +162,9 @@ variable "product_images_bucket_domain" {
   type    = string
   default = ""
 }
+
+variable "tavily_api_key_secret_arn" {
+  description = "Secrets Manager ARN containing the Tavily API key"
+  type        = string
+  default     = ""
+}

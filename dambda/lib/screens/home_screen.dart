@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/product.dart';
+import '../router.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dambda_app_bar.dart';
@@ -11,7 +11,7 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   void _openDetail(BuildContext context, Product product) {
-    context.push('product/${product.id}');
+    openProductDetail(context, '/', product.id);
   }
 
   @override

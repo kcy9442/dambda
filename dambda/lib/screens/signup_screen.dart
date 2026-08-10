@@ -64,7 +64,8 @@ class _SignupScreenState extends State<SignupScreen> {
       country: _countryCode!,
     );
 
-    if (!ok && mounted) {
+    if (!mounted) return;
+    if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authState.lastError ?? l10n.signupFailedDefault),
@@ -72,15 +73,12 @@ class _SignupScreenState extends State<SignupScreen> {
       );
       return;
     }
-
     if (!mounted) return;
     final nickname = _nicknameController.text.trim();
     context.go('/login');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.signupSuccessMessage(nickname))),
     );
-    // 성공 시엔 아무것도 안 함 - authState가 notifyListeners()하면 라우터의
-    // redirect가 자동으로 /signup에서 홈으로 보내줌 (router.dart 참고)
   }
 
   @override
