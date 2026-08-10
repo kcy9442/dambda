@@ -1,12 +1,15 @@
 const { BedrockRuntimeClient, ApplyGuardrailCommand } = require('@aws-sdk/client-bedrock-runtime');
+const { ComprehendClient, DetectToxicContentCommand } = require('@aws-sdk/client-comprehend');
 const { RekognitionClient, DetectModerationLabelsCommand } = require('@aws-sdk/client-rekognition');
 
 const region = process.env.AWS_REGION;
 const guardrailId = process.env.BEDROCK_GUARDRAIL_ID;
 const guardrailVersion = process.env.BEDROCK_GUARDRAIL_VERSION;
 const bedrock = new BedrockRuntimeClient({ region });
+const comprehend = new ComprehendClient({ region });
 const rekognition = new RekognitionClient({ region });
 const MIN_MODERATION_CONFIDENCE = 70;
+const COMPREHEND_TOXICITY_THRESHOLD = Number(process.env.COMPREHEND_TOXICITY_THRESHOLD || '0.80');
 
 async function checkText(text) {
   if (!text || !text.trim()) return { approved: true, reasons: [] };
@@ -42,6 +45,33 @@ async function checkText(text) {
   return { approved: !intervened, reasons: [...reasons] };
 }
 
+function isEnglishText(text) {
+  // DetectToxicContent currently supports English only. Keep Korean and other
+  // multilingual reviews on the Bedrock Guardrail path instead of failing them.
+  return /^[\x00-\x7F]+$/.test(text) && /[A-Za-z]/.test(text);
+}
+
+async function checkComprehendToxicity(text) {
+  const normalized = text && text.trim();
+  if (!normalized || !isEnglishText(normalized)) return { approved: true, reasons: [] };
+
+  // The Comprehend API accepts at most 1 KB per segment. ASCII is one byte per character.
+  const result = await comprehend.send(new DetectToxicContentCommand({
+    LanguageCode: 'en',
+    TextSegments: [{ Text: normalized.slice(0, 1024) }],
+  }));
+
+  const toxicity = Number(result.ResultList?.[0]?.Toxicity || 0);
+  const labels = (result.ResultList?.[0]?.Labels || [])
+    .filter((label) => Number(label.Score || 0) >= COMPREHEND_TOXICITY_THRESHOLD)
+    .map((label) => `text:COMPREHEND_${label.Name || 'TOXIC'}`);
+
+  if (toxicity >= COMPREHEND_TOXICITY_THRESHOLD && labels.length === 0) {
+    labels.push('text:COMPREHEND_TOXIC');
+  }
+  return { approved: labels.length === 0, reasons: labels };
+}
+
 async function checkImage(imageBucket, imageKey) {
   if (!imageBucket || !imageKey) return { approved: true, reasons: [] };
   const result = await rekognition.send(new DetectModerationLabelsCommand({
@@ -55,13 +85,14 @@ async function checkImage(imageBucket, imageKey) {
 exports.handler = async (event) => {
   const { text, imageBucket, imageKey } = event || {};
   try {
-    const [textResult, imageResult] = await Promise.all([
+    const [textResult, comprehendResult, imageResult] = await Promise.all([
       checkText(text),
+      checkComprehendToxicity(text),
       checkImage(imageBucket, imageKey),
     ]);
     return {
-      approved: textResult.approved && imageResult.approved,
-      reasons: [...textResult.reasons, ...imageResult.reasons],
+      approved: textResult.approved && comprehendResult.approved && imageResult.approved,
+      reasons: [...textResult.reasons, ...comprehendResult.reasons, ...imageResult.reasons],
     };
   } catch (err) {
     // Fail closed: unchecked content must never be persisted.
