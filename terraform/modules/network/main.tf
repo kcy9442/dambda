@@ -6,23 +6,40 @@ resource "aws_vpc" "main" {
   tags                 = { Name = "${var.region_name}-vpc" }
 }
 
+locals {
+  public_subnets = {
+    for index, cidr in var.public_subnets : cidr => {
+      cidr = cidr
+      az   = "${var.aws_region}${var.availability_zones[index]}"
+      name = index + 1
+    }
+  }
+  private_subnets = {
+    for index, cidr in var.private_subnets : cidr => {
+      cidr = cidr
+      az   = "${var.aws_region}${var.availability_zones[index]}"
+      name = index + 1
+    }
+  }
+}
+
 # 퍼블릭 서브넷
 resource "aws_subnet" "public" {
-  count                   = length(var.public_subnets)
+  for_each                = local.public_subnets
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnets[count.index]
-  availability_zone       = "${var.aws_region}${var.availability_zones[count.index]}"
+  cidr_block              = each.value.cidr
+  availability_zone       = each.value.az
   map_public_ip_on_launch = true
-  tags                    = { Name = "${var.region_name}-public-subnet-${count.index + 1}" }
+  tags                    = { Name = "${var.region_name}-public-subnet-${each.value.name}" }
 }
 
 # 프라이빗 서브넷
 resource "aws_subnet" "private" {
-  count             = length(var.private_subnets)
+  for_each          = local.private_subnets
   vpc_id            = aws_vpc.main.id
-  cidr_block        = var.private_subnets[count.index]
-  availability_zone = "${var.aws_region}${var.availability_zones[count.index]}"
-  tags              = { Name = "${var.region_name}-private-subnet-${count.index + 1}" }
+  cidr_block        = each.value.cidr
+  availability_zone = each.value.az
+  tags              = { Name = "${var.region_name}-private-subnet-${each.value.name}" }
 }
 
 # 인터넷 게이트웨이
@@ -43,8 +60,8 @@ resource "aws_route_table" "public" {
 
 # 퍼블릭 서브넷 연결
 resource "aws_route_table_association" "public" {
-  count          = length(aws_subnet.public)
-  subnet_id      = aws_subnet.public[count.index].id
+  for_each       = aws_subnet.public
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -58,15 +75,15 @@ resource "aws_eip" "nat" {
 # 개발 환경은 NAT Gateway 하나를 공유해 고정 비용을 줄인다.
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id
+  subnet_id     = aws_subnet.public[var.public_subnets[0]].id
 
   tags = { Name = "${var.region_name}-nat-gw" }
 }
 
 # 프라이빗 라우팅 테이블
 resource "aws_route_table" "private" {
-  count  = length(var.private_subnets)
-  vpc_id = aws_vpc.main.id
+  for_each = local.private_subnets
+  vpc_id   = aws_vpc.main.id
 
   route {
     cidr_block     = "0.0.0.0/0"
@@ -79,21 +96,21 @@ resource "aws_route_table" "private" {
     ignore_changes = [route]
   }
 
-  tags = { Name = "${var.region_name}-private-rt-${count.index + 1}" }
+  tags = { Name = "${var.region_name}-private-rt-${each.value.name}" }
 }
 
 # 프라이빗 서브넷과 라우팅 테이블 연결
 resource "aws_route_table_association" "private" {
-  count          = length(var.private_subnets)
-  subnet_id      = aws_subnet.private[count.index].id
-  route_table_id = aws_route_table.private[count.index].id
+  for_each       = local.private_subnets
+  subnet_id      = aws_subnet.private[each.key].id
+  route_table_id = aws_route_table.private[each.key].id
 }
 
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = aws_vpc.main.id
   service_name      = "com.amazonaws.${var.aws_region}.s3"
   vpc_endpoint_type = "Gateway"
-  route_table_ids   = aws_route_table.private[*].id # 프라이빗 라우팅 테이블에 S3 경로 추가
+  route_table_ids   = values(aws_route_table.private)[*].id # 프라이빗 라우팅 테이블에 S3 경로 추가
 
   tags = { Name = "${var.region_name}-s3-endpoint" }
 }
@@ -105,7 +122,7 @@ resource "aws_vpc_endpoint" "dynamodb" {
   vpc_endpoint_type = "Gateway"
 
   # 프라이빗 라우팅 테이블에 DynamoDB 경로 추가
-  route_table_ids = aws_route_table.private[*].id
+  route_table_ids = values(aws_route_table.private)[*].id
 
   tags = { Name = "${var.region_name}-dynamodb-endpoint" }
 }
