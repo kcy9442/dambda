@@ -46,7 +46,7 @@ resource "aws_cognito_user_pool_client" "app_client" {
 
   # 이메일 로그인과 소셜 로그인을 함께 제공한다. Google/Facebook 공급자는 각 개발자
   # 콘솔에서 발급한 Client ID/Secret을 등록한 뒤 이 목록에 추가한다.
-  supported_identity_providers         = ["COGNITO", "Google"]
+  supported_identity_providers         = ["COGNITO"]
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_scopes = [

@@ -120,6 +120,7 @@ module "compute" {
   moderation_lambda_arn     = module.lambda_moderation.lambda_arn
   moderation_lambda_name    = module.lambda_moderation.lambda_name
   tavily_api_key_secret_arn = aws_secretsmanager_secret.tavily_api_key.arn
+  enable_tavily_secret      = true
 
   # 기타 변수
   region_name    = var.region_name
