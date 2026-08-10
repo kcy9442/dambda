@@ -61,6 +61,7 @@ resource "aws_cloudfront_distribution" "static_site" {
   enabled             = true
   default_root_object = "index.html"
   price_class         = "PriceClass_200"
+  aliases             = var.custom_domain == "" ? [] : [var.custom_domain]
 
   origin {
     domain_name = aws_s3_bucket_website_configuration.static_site.website_endpoint
@@ -110,7 +111,10 @@ resource "aws_cloudfront_distribution" "static_site" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn            = var.acm_certificate_arn
+    cloudfront_default_certificate = var.acm_certificate_arn == null
+    ssl_support_method             = var.acm_certificate_arn == null ? null : "sni-only"
+    minimum_protocol_version       = var.acm_certificate_arn == null ? null : "TLSv1.2_2021"
   }
 
   tags = { Name = "${var.region_name}-web" }

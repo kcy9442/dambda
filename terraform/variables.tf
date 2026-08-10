@@ -42,6 +42,18 @@ variable "bedrock_guardrail_profile_identifier" {
   default     = ""
 }
 
+variable "root_domain" {
+  description = "Route 53 hosted zone domain used for DNS validation"
+  type        = string
+  default     = "shinning.cloud"
+}
+
+variable "web_domain" {
+  description = "Custom hostname served by the primary CloudFront distribution"
+  type        = string
+  default     = "www.shinning.cloud"
+}
+
 # 미국(us-east-1) pilot-light 재해복구 리전 설정
 variable "us_aws_region" {
   description = "미국 재해복구 리전"

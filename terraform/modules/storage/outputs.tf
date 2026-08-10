@@ -8,6 +8,14 @@ output "cloudfront_distribution_id" {
   value       = aws_cloudfront_distribution.static_site.id
 }
 
+output "cloudfront_domain_name" {
+  value = aws_cloudfront_distribution.static_site.domain_name
+}
+
+output "cloudfront_hosted_zone_id" {
+  value = aws_cloudfront_distribution.static_site.hosted_zone_id
+}
+
 output "website_endpoint" {
   description = "CloudFront HTTPS 웹 사이트 URL"
   value       = "https://${aws_cloudfront_distribution.static_site.domain_name}"
