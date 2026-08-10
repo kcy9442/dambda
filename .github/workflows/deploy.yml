@@ -59,6 +59,7 @@ jobs:
         run: |
           terraform apply -input=false -auto-approve \
             -target=module.compute.aws_ecr_repository.backend \
+            -target=module.compute.aws_iam_role_policy.ecs_execution_secrets \
             -target=aws_secretsmanager_secret.tavily_api_key
           secret_arn="$(terraform output -raw tavily_secret_arn)"
           aws secretsmanager put-secret-value --secret-id "$secret_arn" --secret-string "$TAVILY_API_KEY" >/dev/null
