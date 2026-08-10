@@ -25,8 +25,11 @@ resource "aws_bedrock_guardrail" "reviews" {
         output_strength = "MEDIUM"
       }
     }
-    tier_config {
-      tier_name = "STANDARD"
+    dynamic "tier_config" {
+      for_each = var.guardrail_profile_identifier == "" ? [] : [1]
+      content {
+        tier_name = "STANDARD"
+      }
     }
   }
 
