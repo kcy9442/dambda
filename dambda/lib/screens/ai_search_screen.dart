@@ -56,18 +56,20 @@ class _AiSearchScreenState extends State<AiSearchScreen> {
             padding: const EdgeInsets.all(24),
             children: [
               Text(
-                'AI 뷰티 검색',
+                'AI 상품 검색',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 8),
-              const Text('제품, 성분, 피부 고민을 물어보세요. AI가 최신 웹 정보를 찾아 요약합니다.'),
+              const Text(
+                '간식, 화장품, 생활용품 등 원하는 상품 정보를 물어보세요. AI가 최신 웹 정보를 찾아 요약합니다.',
+              ),
               const SizedBox(height: 20),
               TextField(
                 controller: _controller,
                 textInputAction: TextInputAction.search,
                 onSubmitted: (_) => _search(),
                 decoration: InputDecoration(
-                  hintText: '예: 민감성 피부에 좋은 보습 성분은?',
+                  hintText: '예: 이 간식의 알레르기 성분은? 여행용 생활용품을 추천해 줘',
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     onPressed: _search,

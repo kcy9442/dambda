@@ -10,6 +10,7 @@ import '../services/review_service.dart';
 import '../state/app_state.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/product_ai_question.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -466,6 +467,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ],
                 ),
               ),
+              ProductAiQuestion(product: product),
               const Divider(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
