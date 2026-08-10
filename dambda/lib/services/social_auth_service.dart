@@ -9,7 +9,7 @@ import 'social_auth_platform.dart';
 const _domain =
     'https://dambda-469072180472.auth.ap-northeast-2.amazoncognito.com';
 const _clientId = '1nua9d7v6pg63phcke2m9tot9i';
-const _redirectUri = 'https://d2184j0xiqu4yb.cloudfront.net/auth/callback';
+const _redirectUri = 'https://www.shinning.cloud/auth/callback';
 const _verifierKey = 'dambda_oauth_verifier';
 const _stateKey = 'dambda_oauth_state';
 
