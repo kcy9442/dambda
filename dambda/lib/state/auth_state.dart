@@ -19,6 +19,7 @@ class AuthState extends ChangeNotifier {
   String? lastError;
 
   bool get isLoggedIn => _accessToken != null && profile != null;
+  bool get isAdmin => profile?.isAdmin ?? false;
   String? get accessToken => _accessToken;
 
   // flutter_secure_storage(웹)는 브라우저 Web Crypto API를 쓰는데 이게 HTTPS/localhost

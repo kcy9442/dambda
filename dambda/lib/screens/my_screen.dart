@@ -92,11 +92,12 @@ class MyScreen extends StatelessWidget {
               _MenuRow(icon: Icons.receipt_long, label: l10n.menuOrders),
               _MenuRow(icon: Icons.help_outline, label: l10n.menuSupport),
               _MenuRow(icon: Icons.info_outline, label: l10n.menuAbout),
-              _MenuRow(
-                icon: Icons.admin_panel_settings_outlined,
-                label: '관리자 페이지',
-                onTap: () => context.go('/admin'),
-              ),
+              if (authState.isAdmin)
+                _MenuRow(
+                  icon: Icons.admin_panel_settings_outlined,
+                  label: '관리자 페이지',
+                  onTap: () => context.go('/admin'),
+                ),
               _MenuRow(
                 icon: Icons.logout,
                 label: l10n.menuLogout,

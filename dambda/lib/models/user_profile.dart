@@ -3,12 +3,14 @@ class UserProfile {
   final String email;
   final String nickname;
   final String country;
+  final bool isAdmin;
 
   const UserProfile({
     required this.userId,
     required this.email,
     required this.nickname,
     required this.country,
+    required this.isAdmin,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class UserProfile {
       email: json['email'] as String,
       nickname: json['nickname'] as String,
       country: json['country'] as String,
+      isAdmin: json['isAdmin'] == true,
     );
   }
 }

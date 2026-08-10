@@ -68,6 +68,9 @@ final GoRouter router = GoRouter(
     }.contains(state.matchedLocation);
     if (!loggedIn && !onAuthPage) return '/login';
     if (loggedIn && onAuthPage) return '/';
+    if (loggedIn && state.matchedLocation == '/admin' && !authState.isAdmin) {
+      return '/';
+    }
     return null;
   },
   routes: [
