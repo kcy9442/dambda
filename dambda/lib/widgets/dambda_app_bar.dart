@@ -33,7 +33,8 @@ class DambdaAppBar extends StatelessWidget implements PreferredSizeWidget {
           [
             const LanguageMenu(),
             IconButton(
-              onPressed: () {},
+              tooltip: 'AI 검색',
+              onPressed: () => context.go('/ai-search'),
               icon: const Icon(Icons.search, color: AppColors.textPrimary),
             ),
             IconButton(

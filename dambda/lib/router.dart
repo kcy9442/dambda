@@ -12,6 +12,7 @@ import 'screens/signup_screen.dart';
 import 'screens/account_recovery_screen.dart';
 import 'screens/oauth_callback_screen.dart';
 import 'screens/admin_screen.dart';
+import 'screens/ai_search_screen.dart';
 import 'state/auth_state.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -39,9 +40,15 @@ List<RouteBase> _productDetailRoutes() => [
 
 // 홈/카테고리/좋아요 3개 탭에서 공통으로 쓰는 상품 상세 진입 헬퍼.
 // parentPath는 해당 탭의 최상위 경로('/', '/category', '/likes')
-void openProductDetail(BuildContext context, String parentPath, String productId) {
+void openProductDetail(
+  BuildContext context,
+  String parentPath,
+  String productId,
+) {
   if (kIsWeb) {
-    final path = parentPath == '/' ? '/product/$productId' : '$parentPath/product/$productId';
+    final path = parentPath == '/'
+        ? '/product/$productId'
+        : '$parentPath/product/$productId';
     context.go(path);
   } else {
     context.push('product/$productId');
@@ -75,6 +82,10 @@ final GoRouter router = GoRouter(
       builder: (context, state) => const OAuthCallbackScreen(),
     ),
     GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),
+    GoRoute(
+      path: '/ai-search',
+      builder: (context, state) => const AiSearchScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           MainShell(navigationShell: navigationShell),
