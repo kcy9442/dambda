@@ -1,0 +1,61 @@
+name: Terraform Destroy (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type DESTROY_DAMBDA_PRODUCTION to delete the Terraform-managed production stack"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: production-destroy
+  cancel-in-progress: false
+
+jobs:
+  destroy:
+    # This workflow is manual only. It cannot run from pushes or pull requests.
+    if: inputs.confirmation == 'DESTROY_DAMBDA_PRODUCTION'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+      TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Destroy the stack represented by the merged production configuration.
+          ref: main
+      - uses: hashicorp/setup-terraform@v3
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN || 'arn:aws:iam::469072180472:role/dambda-github-deploy' }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-northeast-2' }}
+      - name: Initialize production state
+        working-directory: terraform
+        run: >-
+          terraform init
+          -backend-config="bucket=${{ vars.TF_STATE_BUCKET || 'dambda-469072180472-terraform-state' }}"
+          -backend-config="key=${{ vars.TF_STATE_KEY || 'dambda/production.tfstate' }}"
+          -backend-config="region=${{ vars.TF_STATE_REGION || vars.AWS_REGION || 'ap-northeast-2' }}"
+          -backend-config="use_lockfile=true"
+      - name: Require deployment configuration
+        shell: bash
+        run: |
+          test -n "$TF_VAR_google_client_id" || { echo "production secret GOOGLE_CLIENT_ID is required"; exit 1; }
+          test -n "$TF_VAR_google_client_secret" || { echo "production secret GOOGLE_CLIENT_SECRET is required"; exit 1; }
+      - name: Create destruction plan
+        working-directory: terraform
+        env:
+          TF_VAR_bedrock_guardrail_profile_identifier: ${{ vars.BEDROCK_GUARDRAIL_PROFILE_ARN }}
+        run: terraform plan -destroy -input=false -lock-timeout=5m -out=tfdestroy
+      - name: Show destruction plan
+        working-directory: terraform
+        run: terraform show -no-color tfdestroy
+      - name: Destroy Terraform-managed production resources
+        working-directory: terraform
+        run: terraform apply -input=false -auto-approve tfdestroy
