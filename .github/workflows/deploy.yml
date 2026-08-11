@@ -93,10 +93,26 @@ jobs:
           # workspace before Terraform persists state. Import it by workspace
           # ID so reruns do not send a duplicate create request.
           if [[ "$TF_VAR_enable_managed_grafana" == "true" ]]; then
-            grafana_workspace_id="$(aws grafana list-workspaces --query "workspaces[?name=='my-app-dev-observability'].id | [0]" --output text)"
-            if [[ -n "$grafana_workspace_id" && "$grafana_workspace_id" != "None" ]]; then
-              terraform state show 'module.monitoring.aws_grafana_workspace.main[0]' >/dev/null 2>&1 || \
+            if ! terraform state show 'module.monitoring.aws_grafana_workspace.main[0]' >/dev/null 2>&1; then
+              grafana_workspace_id="None"
+              # Workspace creation is asynchronous. The first failed Terraform
+              # apply may have submitted it before state could be written.
+              for attempt in {1..36}; do
+                grafana_workspace_id="$(aws grafana list-workspaces --query "workspaces[?name=='my-app-dev-observability'].id | [0]" --output text)"
+                if [[ -n "$grafana_workspace_id" && "$grafana_workspace_id" != "None" ]]; then
+                  break
+                fi
+                echo "Waiting for existing Grafana workspace ($attempt/36)..."
+                sleep 10
+              done
+
+              if [[ -n "$grafana_workspace_id" && "$grafana_workspace_id" != "None" ]]; then
                 terraform import -input=false 'module.monitoring.aws_grafana_workspace.main[0]' "$grafana_workspace_id"
+              else
+                echo "Grafana workspace was not visible after waiting; refusing a duplicate create request."
+                aws grafana list-workspaces --output table || true
+                exit 1
+              fi
             fi
           fi
 
