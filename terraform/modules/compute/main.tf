@@ -246,7 +246,7 @@ resource "aws_ecs_task_definition" "main" {
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
-  container_definitions = jsonencode([
+  container_definitions = jsonencode(concat([
     {
       name  = "app"
       image = "${aws_ecr_repository.backend.repository_url}:latest"
@@ -285,7 +285,67 @@ resource "aws_ecs_task_definition" "main" {
         }
       }
     }
-  ])
+    ], var.enable_prometheus_collector && var.prometheus_remote_write_endpoint != "" ? [
+    {
+      name      = "adot-collector"
+      image     = "public.ecr.aws/aws-observability/aws-otel-collector:latest"
+      essential = true
+      command   = ["--config=env:AOT_CONFIG_CONTENT"]
+      environment = [
+        {
+          name = "AOT_CONFIG_CONTENT"
+          value = yamlencode({
+            extensions = {
+              sigv4auth = {
+                region  = var.aws_region
+                service = "aps"
+              }
+            }
+            receivers = {
+              prometheus = {
+                config = {
+                  scrape_configs = [{
+                    job_name        = "dambda-backend"
+                    scrape_interval = "30s"
+                    metrics_path    = "/metrics"
+                    static_configs = [{
+                      targets = ["127.0.0.1:${var.container_port}"]
+                    }]
+                  }]
+                }
+              }
+            }
+            exporters = {
+              prometheusremotewrite = {
+                endpoint = "${trimsuffix(var.prometheus_remote_write_endpoint, "/")}/api/v1/remote_write"
+                auth = {
+                  authenticator = "sigv4auth"
+                }
+              }
+            }
+            service = {
+              extensions = ["sigv4auth"]
+              pipelines = {
+                metrics = {
+                  receivers = ["prometheus"]
+                  exporters = ["prometheusremotewrite"]
+                }
+              }
+            }
+          })
+        },
+        { name = "AWS_REGION", value = var.aws_region }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "adot"
+        }
+      }
+    }
+  ] : []))
 }
 
 # ECS 서비스

@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const promClient = require('prom-client');
 const config = require('./config');
 const authRoutes = require('./routes/auth');
 const productsRoutes = require('./routes/products');
@@ -8,12 +9,50 @@ const adminRoutes = require('./routes/admin');
 const searchRoutes = require('./routes/search');
 
 const app = express();
+const metrics = new promClient.Registry();
+
+promClient.collectDefaultMetrics({
+  register: metrics,
+  prefix: 'dambda_',
+});
+
+const requestDuration = new promClient.Histogram({
+  name: 'dambda_http_request_duration_seconds',
+  help: 'HTTP request duration in seconds',
+  labelNames: ['method', 'route', 'status_code'],
+  registers: [metrics],
+});
+
 app.use(cors());
 app.use(express.json());
+
+app.use((req, res, next) => {
+  const startedAt = process.hrtime.bigint();
+
+  res.on('finish', () => {
+    const elapsedSeconds = Number(process.hrtime.bigint() - startedAt) / 1e9;
+    const route = req.route?.path || req.baseUrl || 'unmatched';
+    requestDuration.labels(req.method, route, String(res.statusCode)).observe(elapsedSeconds);
+  });
+
+  next();
+});
 
 // ALB 타겟그룹 헬스체크가 무인증으로 이 경로를 침
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// ADOT collector in the same ECS task scrapes this Prometheus endpoint.
+// It contains only process and HTTP performance metrics, never request bodies
+// or user data.
+app.get('/metrics', async (req, res, next) => {
+  try {
+    res.set('Content-Type', metrics.contentType);
+    res.end(await metrics.metrics());
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use('/auth', authRoutes);

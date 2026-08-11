@@ -102,10 +102,12 @@ module "monitoring" {
   source    = "./modules/monitoring"
   providers = { aws = aws.seoul }
 
-  region_name            = var.region_name
-  aws_region             = var.aws_region
-  ecs_cluster_name       = module.compute.cluster_name
-  ecs_service_name       = module.compute.service_name
+  region_name = var.region_name
+  aws_region  = var.aws_region
+  # Keep the workspace independent from the ECS task definition so that the
+  # AMP endpoint can be passed back into the task without a dependency cycle.
+  ecs_cluster_name       = "${var.region_name}-cluster"
+  ecs_service_name       = "${var.region_name}-service"
   moderation_lambda_name = module.lambda_moderation.lambda_name
   review_queue_name      = module.async_review_pipeline.queue_name
   enable_prometheus      = var.enable_managed_prometheus
@@ -168,13 +170,15 @@ module "compute" {
   product_images_bucket_arn    = module.storage.product_images_bucket_arn
   product_images_bucket_domain = module.storage.product_images_bucket_domain
 
-  moderation_lambda_arn     = module.lambda_moderation.lambda_arn
-  moderation_lambda_name    = module.lambda_moderation.lambda_name
-  tavily_api_key_secret_arn = aws_secretsmanager_secret.tavily_api_key.arn
-  enable_tavily_secret      = true
-  review_events_queue_arn   = module.async_review_pipeline.queue_arn
-  review_events_queue_url   = module.async_review_pipeline.queue_url
-  review_workflow_arn       = module.async_review_pipeline.state_machine_arn
+  moderation_lambda_arn            = module.lambda_moderation.lambda_arn
+  moderation_lambda_name           = module.lambda_moderation.lambda_name
+  tavily_api_key_secret_arn        = aws_secretsmanager_secret.tavily_api_key.arn
+  enable_tavily_secret             = true
+  review_events_queue_arn          = module.async_review_pipeline.queue_arn
+  review_events_queue_url          = module.async_review_pipeline.queue_url
+  review_workflow_arn              = module.async_review_pipeline.state_machine_arn
+  enable_prometheus_collector      = var.enable_managed_prometheus
+  prometheus_remote_write_endpoint = module.monitoring.prometheus_remote_write_endpoint
 
   # 기타 변수
   region_name    = var.region_name
