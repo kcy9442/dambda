@@ -81,11 +81,12 @@ jobs:
               echo "Restoring Tavily secret scheduled for deletion."
               aws secretsmanager restore-secret --secret-id "$secret_name"
             fi
+            secret_arn="$(aws secretsmanager describe-secret --secret-id "$secret_name" --query 'ARN' --output text)"
             # Import is required before the full plan.  Do not hide an import
             # failure: a restored secret exists in AWS but is absent from a
             # newly recreated Terraform state.
             terraform state show aws_secretsmanager_secret.tavily_api_key >/dev/null 2>&1 || \
-              terraform import -input=false aws_secretsmanager_secret.tavily_api_key "$secret_name"
+              terraform import -input=false aws_secretsmanager_secret.tavily_api_key "$secret_arn"
           fi
 
           # The targeted apply is only needed for a brand-new environment.
