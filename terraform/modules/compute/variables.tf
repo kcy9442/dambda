@@ -192,3 +192,15 @@ variable "review_workflow_arn" {
   type        = string
   default     = ""
 }
+
+variable "enable_prometheus_collector" {
+  description = "Run an ADOT sidecar that scrapes /metrics and writes to Amazon Managed Prometheus"
+  type        = bool
+  default     = false
+}
+
+variable "prometheus_remote_write_endpoint" {
+  description = "Amazon Managed Prometheus workspace endpoint used by the ADOT sidecar"
+  type        = string
+  default     = ""
+}
