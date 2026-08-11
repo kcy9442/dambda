@@ -21,3 +21,8 @@ variable "anomaly_threshold_usd" {
   type    = number
   default = 5
 }
+
+variable "enable_anomaly_detection" {
+  type    = bool
+  default = false
+}

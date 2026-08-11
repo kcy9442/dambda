@@ -13,8 +13,29 @@ resource "aws_grafana_workspace" "main" {
   authentication_providers = ["AWS_SSO"]
   permission_type          = "SERVICE_MANAGED"
   data_sources             = ["CLOUDWATCH", "PROMETHEUS"]
+  role_arn                 = aws_iam_role.grafana_workspace[0].arn
 
   tags = { Name = "${var.region_name}-observability" }
+}
+
+resource "aws_iam_role" "grafana_workspace" {
+  count = var.enable_grafana ? 1 : 0
+  name  = "${var.region_name}-grafana-workspace-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRole"
+      Principal = { Service = "grafana.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "grafana_workspace" {
+  count      = var.enable_grafana ? 1 : 0
+  role       = aws_iam_role.grafana_workspace[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonGrafanaAccountAdministrator"
 }
 
 resource "aws_cloudwatch_dashboard" "operations" {

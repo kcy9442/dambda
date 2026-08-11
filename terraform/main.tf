@@ -116,11 +116,12 @@ module "cost_controls" {
   source    = "./modules/cost_controls"
   providers = { aws = aws.us_east_1 }
 
-  region_name           = var.region_name
-  enable_cost_controls  = var.enable_cost_controls
-  alert_email           = var.cost_alert_email
-  monthly_budget_usd    = var.monthly_budget_usd
-  anomaly_threshold_usd = var.cost_anomaly_threshold_usd
+  region_name              = var.region_name
+  enable_cost_controls     = var.enable_cost_controls
+  alert_email              = var.cost_alert_email
+  monthly_budget_usd       = var.monthly_budget_usd
+  anomaly_threshold_usd    = var.cost_anomaly_threshold_usd
+  enable_anomaly_detection = var.enable_cost_anomaly_detection
 }
 
 resource "aws_secretsmanager_secret" "tavily_api_key" {

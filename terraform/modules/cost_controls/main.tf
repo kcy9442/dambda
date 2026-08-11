@@ -42,7 +42,9 @@ resource "aws_budgets_budget" "monthly" {
 }
 
 resource "aws_ce_anomaly_monitor" "services" {
-  count = local.enabled ? 1 : 0
+  # Dimensional monitors are limited per AWS account. Keep this opt-in so a
+  # pre-existing account-level monitor does not block all infrastructure.
+  count = local.enabled && var.enable_anomaly_detection ? 1 : 0
 
   depends_on = [terraform_data.cost_control_configuration]
 
@@ -52,7 +54,7 @@ resource "aws_ce_anomaly_monitor" "services" {
 }
 
 resource "aws_ce_anomaly_subscription" "daily" {
-  count = local.enabled ? 1 : 0
+  count = local.enabled && var.enable_anomaly_detection ? 1 : 0
 
   name      = "${var.region_name}-daily-cost-anomalies"
   frequency = "DAILY"
