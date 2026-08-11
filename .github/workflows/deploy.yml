@@ -109,9 +109,15 @@ jobs:
               if [[ -n "$grafana_workspace_id" && "$grafana_workspace_id" != "None" ]]; then
                 terraform import -input=false 'module.monitoring.aws_grafana_workspace.main[0]' "$grafana_workspace_id"
               else
-                echo "Grafana workspace was not visible after waiting; refusing a duplicate create request."
+                # AWS can retain a previous CreateWorkspace request without
+                # exposing the workspace ID to ListWorkspaces.  Continuing
+                # with Grafana enabled would make the whole application
+                # deployment fail with ConflictException.  Deploy the app and
+                # keep AMP/CloudWatch enabled; Grafana can be enabled again
+                # after the stale request becomes visible or is cleared.
+                echo "Grafana workspace is still unavailable after waiting; skipping Managed Grafana for this deployment."
                 aws grafana list-workspaces --output table || true
-                exit 1
+                echo "TF_VAR_enable_managed_grafana=false" >> "$GITHUB_ENV"
               fi
             fi
           fi
