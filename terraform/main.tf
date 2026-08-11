@@ -47,6 +47,16 @@ module "storage" {
   region_name         = var.region_name
   custom_domain       = var.web_domain
   acm_certificate_arn = aws_acm_certificate_validation.web.certificate_arn
+  waf_web_acl_arn     = module.waf.web_acl_arn
+}
+
+# CloudFront-scoped WAF must be created with the us-east-1 provider.
+module "waf" {
+  source    = "./modules/waf"
+  providers = { aws = aws.us_east_1 }
+
+  region_name              = var.region_name
+  rate_limit_per_5_minutes = var.waf_rate_limit_per_5_minutes
 }
 
 # 5. 로그인/회원가입 인증 (독립적, 다른 모듈과 의존관계 없음)
@@ -76,6 +86,41 @@ module "lambda_moderation" {
   region_name                  = var.region_name
   review_photos_bucket_arn     = module.storage.review_photos_bucket_arn
   guardrail_profile_identifier = var.bedrock_guardrail_profile_identifier
+}
+
+# Approved reviews can be handed to this queue by the Step Functions workflow.
+# The current backend remains synchronous until its review route is migrated.
+module "async_review_pipeline" {
+  source    = "./modules/async_review_pipeline"
+  providers = { aws = aws.seoul }
+
+  region_name           = var.region_name
+  moderation_lambda_arn = module.lambda_moderation.lambda_arn
+}
+
+module "monitoring" {
+  source    = "./modules/monitoring"
+  providers = { aws = aws.seoul }
+
+  region_name            = var.region_name
+  aws_region             = var.aws_region
+  ecs_cluster_name       = module.compute.cluster_name
+  ecs_service_name       = module.compute.service_name
+  moderation_lambda_name = module.lambda_moderation.lambda_name
+  review_queue_name      = module.async_review_pipeline.queue_name
+  enable_prometheus      = var.enable_managed_prometheus
+  enable_grafana         = var.enable_managed_grafana
+}
+
+module "cost_controls" {
+  source    = "./modules/cost_controls"
+  providers = { aws = aws.us_east_1 }
+
+  region_name           = var.region_name
+  enable_cost_controls  = var.enable_cost_controls
+  alert_email           = var.cost_alert_email
+  monthly_budget_usd    = var.monthly_budget_usd
+  anomaly_threshold_usd = var.cost_anomaly_threshold_usd
 }
 
 resource "aws_secretsmanager_secret" "tavily_api_key" {
@@ -126,6 +171,9 @@ module "compute" {
   moderation_lambda_name    = module.lambda_moderation.lambda_name
   tavily_api_key_secret_arn = aws_secretsmanager_secret.tavily_api_key.arn
   enable_tavily_secret      = true
+  review_events_queue_arn   = module.async_review_pipeline.queue_arn
+  review_events_queue_url   = module.async_review_pipeline.queue_url
+  review_workflow_arn       = module.async_review_pipeline.state_machine_arn
 
   # 기타 변수
   region_name    = var.region_name

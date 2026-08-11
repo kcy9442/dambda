@@ -14,3 +14,9 @@ variable "acm_certificate_arn" {
   type        = string
   default     = null
 }
+
+variable "waf_web_acl_arn" {
+  description = "Optional CloudFront-scope WAFv2 Web ACL ARN"
+  type        = string
+  default     = null
+}

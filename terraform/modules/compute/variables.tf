@@ -174,3 +174,21 @@ variable "enable_tavily_secret" {
   type        = bool
   default     = false
 }
+
+variable "review_events_queue_arn" {
+  description = "SQS queue used by the asynchronous review pipeline"
+  type        = string
+  default     = ""
+}
+
+variable "review_events_queue_url" {
+  description = "SQS queue URL exposed to the backend for future async review publishing"
+  type        = string
+  default     = ""
+}
+
+variable "review_workflow_arn" {
+  description = "Step Functions review moderation workflow ARN"
+  type        = string
+  default     = ""
+}

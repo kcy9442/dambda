@@ -159,6 +159,19 @@ locals {
     Effect   = "Allow"
     Resource = "${var.product_images_bucket_arn}/*"
   }] : []
+
+  async_review_statements = var.review_events_queue_arn != "" && var.review_workflow_arn != "" ? [
+    {
+      Action   = ["sqs:SendMessage"]
+      Effect   = "Allow"
+      Resource = var.review_events_queue_arn
+    },
+    {
+      Action   = ["states:StartExecution"]
+      Effect   = "Allow"
+      Resource = var.review_workflow_arn
+    }
+  ] : []
 }
 
 # AMP + 로그인·회원가입/좋아요/리뷰 백엔드가 쓰는 DynamoDB/Cognito/S3/Lambda 권한
@@ -190,6 +203,7 @@ resource "aws_iam_policy" "ecs_task_policy" {
       local.moderation_lambda_statements,
       local.product_catalog_statements,
       local.product_images_statements,
+      local.async_review_statements,
     )
   })
 }
@@ -256,6 +270,8 @@ resource "aws_ecs_task_definition" "main" {
         { name = "PRODUCT_CATALOG_TABLE_NAME", value = var.product_catalog_table_name },
         { name = "S3_PRODUCT_IMAGES_BUCKET", value = var.product_images_bucket_name },
         { name = "S3_PRODUCT_IMAGES_DOMAIN", value = var.product_images_bucket_domain },
+        { name = "REVIEW_EVENTS_QUEUE_URL", value = var.review_events_queue_url },
+        { name = "REVIEW_WORKFLOW_ARN", value = var.review_workflow_arn },
       ]
       secrets = var.enable_tavily_secret ? [
         { name = "TAVILY_API_KEY", valueFrom = var.tavily_api_key_secret_arn }

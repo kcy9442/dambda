@@ -12,6 +12,10 @@ output "cloudfront_domain_name" {
   value = aws_cloudfront_distribution.static_site.domain_name
 }
 
+output "cloudfront_distribution_arn" {
+  value = aws_cloudfront_distribution.static_site.arn
+}
+
 output "cloudfront_hosted_zone_id" {
   value = aws_cloudfront_distribution.static_site.hosted_zone_id
 }
