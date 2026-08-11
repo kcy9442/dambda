@@ -15,6 +15,8 @@ resource "aws_grafana_workspace" "main" {
   data_sources             = ["CLOUDWATCH", "PROMETHEUS"]
   role_arn                 = aws_iam_role.grafana_workspace[0].arn
 
+  depends_on = [aws_iam_role_policy.grafana_workspace]
+
   tags = { Name = "${var.region_name}-observability" }
 }
 
@@ -32,10 +34,38 @@ resource "aws_iam_role" "grafana_workspace" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "grafana_workspace" {
-  count      = var.enable_grafana ? 1 : 0
-  role       = aws_iam_role.grafana_workspace[0].name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonGrafanaAccountAdministrator"
+resource "aws_iam_role_policy" "grafana_workspace" {
+  count = var.enable_grafana ? 1 : 0
+  name  = "${var.region_name}-grafana-data-source-read"
+  role  = aws_iam_role.grafana_workspace[0].id
+
+  # The workspace role is assumed by Amazon Managed Grafana to query its
+  # configured CloudWatch and AMP data sources.
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:GetMetricData",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:GetLogEvents",
+          "logs:StartQuery",
+          "logs:GetQueryResults",
+          "logs:StopQuery",
+          "tag:GetResources",
+          "aps:GetLabels",
+          "aps:GetMetricMetadata",
+          "aps:GetSeries",
+          "aps:QueryMetrics"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 resource "aws_cloudwatch_dashboard" "operations" {
