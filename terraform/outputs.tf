@@ -73,3 +73,19 @@ output "vpc_peering_connection_id" {
   description = "서울과 미국 VPC Peering 연결 ID"
   value       = aws_vpc_peering_connection.seoul_to_us.id
 }
+
+output "review_events_queue_url" {
+  value = module.async_review_pipeline.queue_url
+}
+
+output "review_moderation_state_machine_arn" {
+  value = module.async_review_pipeline.state_machine_arn
+}
+
+output "prometheus_remote_write_endpoint" {
+  value = module.monitoring.prometheus_remote_write_endpoint
+}
+
+output "grafana_workspace_endpoint" {
+  value = module.monitoring.grafana_workspace_endpoint
+}

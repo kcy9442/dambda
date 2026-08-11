@@ -62,6 +62,7 @@ resource "aws_cloudfront_distribution" "static_site" {
   default_root_object = "index.html"
   price_class         = "PriceClass_200"
   aliases             = var.custom_domain == "" ? [] : [var.custom_domain]
+  web_acl_id          = var.waf_web_acl_arn
 
   origin {
     domain_name = aws_s3_bucket_website_configuration.static_site.website_endpoint

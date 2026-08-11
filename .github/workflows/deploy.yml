@@ -25,6 +25,11 @@ jobs:
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
       TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
       TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      TF_VAR_enable_managed_grafana: ${{ vars.ENABLE_MANAGED_GRAFANA || 'false' }}
+      TF_VAR_enable_cost_controls: ${{ vars.ENABLE_COST_CONTROLS || 'false' }}
+      TF_VAR_cost_alert_email: ${{ vars.COST_ALERT_EMAIL || '' }}
+      TF_VAR_monthly_budget_usd: ${{ vars.MONTHLY_BUDGET_USD || '25' }}
+      TF_VAR_cost_anomaly_threshold_usd: ${{ vars.COST_ANOMALY_THRESHOLD_USD || '5' }}
     steps:
       - uses: actions/checkout@v4
         with:

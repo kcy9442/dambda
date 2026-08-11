@@ -65,6 +65,48 @@ variable "google_client_secret" {
   sensitive   = true
 }
 
+variable "waf_rate_limit_per_5_minutes" {
+  description = "CloudFront WAF requests allowed per source IP in a five-minute window"
+  type        = number
+  default     = 2000
+}
+
+variable "enable_managed_prometheus" {
+  description = "Create an Amazon Managed Prometheus workspace"
+  type        = bool
+  default     = true
+}
+
+variable "enable_managed_grafana" {
+  description = "Create Amazon Managed Grafana after IAM Identity Center is configured"
+  type        = bool
+  default     = false
+}
+
+variable "enable_cost_controls" {
+  description = "Create AWS Budget and Cost Anomaly Detection after an alert email is configured"
+  type        = bool
+  default     = false
+}
+
+variable "cost_alert_email" {
+  description = "Email recipient for Budget and Cost Anomaly Detection notifications"
+  type        = string
+  default     = ""
+}
+
+variable "monthly_budget_usd" {
+  description = "Monthly AWS cost budget in USD"
+  type        = number
+  default     = 25
+}
+
+variable "cost_anomaly_threshold_usd" {
+  description = "Daily cost anomaly impact threshold in USD"
+  type        = number
+  default     = 5
+}
+
 # 미국(us-east-1) pilot-light 재해복구 리전 설정
 variable "us_aws_region" {
   description = "미국 재해복구 리전"
