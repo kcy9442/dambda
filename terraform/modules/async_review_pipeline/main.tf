@@ -20,6 +20,47 @@ resource "aws_sqs_queue" "review_events" {
   tags = { Name = "${var.region_name}-review-events" }
 }
 
+# EventBridge is the event contract for downstream consumers.  New consumers
+# can subscribe with their own rules without changing the review workflow.
+resource "aws_cloudwatch_event_bus" "review_events" {
+  name = "${var.region_name}-review-events"
+  tags = { Name = "${var.region_name}-review-events" }
+}
+
+resource "aws_cloudwatch_event_rule" "approved_review_to_sqs" {
+  name           = "${var.region_name}-approved-review-to-sqs"
+  event_bus_name = aws_cloudwatch_event_bus.review_events.name
+
+  event_pattern = jsonencode({
+    source        = ["dambda.reviews"]
+    "detail-type" = ["ReviewApproved"]
+  })
+}
+
+resource "aws_cloudwatch_event_target" "approved_review_queue" {
+  rule           = aws_cloudwatch_event_rule.approved_review_to_sqs.name
+  event_bus_name = aws_cloudwatch_event_bus.review_events.name
+  arn            = aws_sqs_queue.review_events.arn
+}
+
+resource "aws_sqs_queue_policy" "allow_eventbridge" {
+  queue_url = aws_sqs_queue.review_events.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "AllowEventBridgeToSendApprovedReviews"
+      Effect    = "Allow"
+      Principal = { Service = "events.amazonaws.com" }
+      Action    = "sqs:SendMessage"
+      Resource  = aws_sqs_queue.review_events.arn
+      Condition = {
+        ArnEquals = { "aws:SourceArn" = aws_cloudwatch_event_rule.approved_review_to_sqs.arn }
+      }
+    }]
+  })
+}
+
 resource "aws_iam_role" "state_machine" {
   name = "${var.region_name}-review-workflow-role"
 
@@ -47,8 +88,8 @@ resource "aws_iam_role_policy" "state_machine" {
       },
       {
         Effect   = "Allow"
-        Action   = ["sqs:SendMessage"]
-        Resource = aws_sqs_queue.review_events.arn
+        Action   = ["events:PutEvents"]
+        Resource = aws_cloudwatch_event_bus.review_events.arn
       },
       {
         Effect = "Allow"
@@ -97,16 +138,20 @@ resource "aws_sfn_state_machine" "review_moderation" {
         Choices = [{
           Variable      = "$.moderation.Payload.approved"
           BooleanEquals = true
-          Next          = "QueueApprovedReview"
+          Next          = "PublishApprovedReview"
         }]
         Default = "Rejected"
       }
-      QueueApprovedReview = {
+      PublishApprovedReview = {
         Type     = "Task"
-        Resource = "arn:aws:states:::sqs:sendMessage"
+        Resource = "arn:aws:states:::events:putEvents"
         Parameters = {
-          QueueUrl        = aws_sqs_queue.review_events.id
-          "MessageBody.$" = "$"
+          Entries = [{
+            Source       = "dambda.reviews"
+            DetailType   = "ReviewApproved"
+            EventBusName = aws_cloudwatch_event_bus.review_events.name
+            "Detail.$"   = "States.JsonToString($)"
+          }]
         }
         End = true
       }

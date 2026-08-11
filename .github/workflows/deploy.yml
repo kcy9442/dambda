@@ -94,9 +94,11 @@ jobs:
               -target=module.compute.aws_iam_role_policy.ecs_execution_secrets \
               -target=aws_secretsmanager_secret.tavily_api_key
           fi
-          secret_arn="$(terraform output -raw tavily_secret_arn)"
+          # Bootstrap can run against a freshly recreated state, where Terraform
+          # outputs do not exist yet. Read these values from AWS instead.
+          secret_arn="$(aws secretsmanager describe-secret --secret-id "$secret_name" --query 'ARN' --output text)"
           aws secretsmanager put-secret-value --secret-id "$secret_arn" --secret-string "$TAVILY_API_KEY" >/dev/null
-          echo "ecr=$(terraform output -raw backend_ecr_repository_url)" >> "$GITHUB_OUTPUT"
+          echo "ecr=$(aws ecr describe-repositories --repository-names my-app-dev-backend --query 'repositories[0].repositoryUri' --output text)" >> "$GITHUB_OUTPUT"
         id: bootstrap
       - uses: aws-actions/amazon-ecr-login@v2
       - name: Build and push backend image before ECS creation
