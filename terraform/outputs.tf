@@ -50,6 +50,11 @@ output "cognito_oauth_domain" {
   value = module.cognito.oauth_domain
 }
 
+output "cognito_user_pool_client_id" {
+  description = "Cognito OAuth app client ID injected into the Flutter web build"
+  value       = module.cognito.user_pool_client_id
+}
+
 output "social_provider_callback_url" {
   value = module.cognito.social_provider_callback_url
 }

@@ -6,9 +6,18 @@ import 'api_exception.dart';
 import 'http_timeout.dart';
 import 'social_auth_platform.dart';
 
-const _domain =
-    'https://dambda-469072180472.auth.ap-northeast-2.amazoncognito.com';
-const _clientId = '82ofkpcl14kdfh9fbgltaqdia';
+// Terraform recreates the Cognito app client with a new ID when the user
+// pool is recreated. These values are injected by the production web build
+// so the Flutter app cannot retain an obsolete OAuth client ID.
+const _domain = String.fromEnvironment(
+  'COGNITO_OAUTH_DOMAIN',
+  defaultValue:
+      'https://dambda-469072180472.auth.ap-northeast-2.amazoncognito.com',
+);
+const _clientId = String.fromEnvironment(
+  'COGNITO_CLIENT_ID',
+  defaultValue: '82ofkpcl14kdfh9fbgltaqdia',
+);
 const _redirectUri = 'https://www.shinning.cloud/auth/callback';
 const _verifierKey = 'dambda_oauth_verifier';
 const _stateKey = 'dambda_oauth_state';
