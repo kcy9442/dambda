@@ -55,6 +55,11 @@ output "cognito_user_pool_client_id" {
   value       = module.cognito.user_pool_client_id
 }
 
+output "product_catalog_table_name" {
+  description = "DynamoDB product catalog table seeded after a fresh deployment"
+  value       = module.dynamodb.product_catalog_table_name
+}
+
 output "social_provider_callback_url" {
   value = module.cognito.social_provider_callback_url
 }
