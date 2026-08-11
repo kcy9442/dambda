@@ -27,6 +27,7 @@ jobs:
       TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       TF_VAR_enable_managed_grafana: ${{ vars.ENABLE_MANAGED_GRAFANA || 'false' }}
       TF_VAR_enable_cost_controls: ${{ vars.ENABLE_COST_CONTROLS || 'false' }}
+      TF_VAR_enable_cost_anomaly_detection: ${{ vars.ENABLE_COST_ANOMALY_DETECTION || 'false' }}
       TF_VAR_cost_alert_email: ${{ vars.COST_ALERT_EMAIL || '' }}
       TF_VAR_monthly_budget_usd: ${{ vars.MONTHLY_BUDGET_USD || '25' }}
       TF_VAR_cost_anomaly_threshold_usd: ${{ vars.COST_ANOMALY_THRESHOLD_USD || '5' }}
@@ -80,7 +81,11 @@ jobs:
               echo "Restoring Tavily secret scheduled for deletion."
               aws secretsmanager restore-secret --secret-id "$secret_name"
             fi
-            terraform import -input=false aws_secretsmanager_secret.tavily_api_key "$secret_name" >/dev/null 2>&1 || true
+            # Import is required before the full plan.  Do not hide an import
+            # failure: a restored secret exists in AWS but is absent from a
+            # newly recreated Terraform state.
+            terraform state show aws_secretsmanager_secret.tavily_api_key >/dev/null 2>&1 || \
+              terraform import -input=false aws_secretsmanager_secret.tavily_api_key "$secret_name"
           fi
 
           # The targeted apply is only needed for a brand-new environment.

@@ -107,6 +107,12 @@ variable "cost_anomaly_threshold_usd" {
   default     = 5
 }
 
+variable "enable_cost_anomaly_detection" {
+  description = "Create a new Cost Explorer anomaly monitor when account monitor capacity is available"
+  type        = bool
+  default     = false
+}
+
 # 미국(us-east-1) pilot-light 재해복구 리전 설정
 variable "us_aws_region" {
   description = "미국 재해복구 리전"
