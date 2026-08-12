@@ -1,9 +1,11 @@
 # 회원 프로필 저장 (닉네임/국가 등). 비밀번호는 저장하지 않음 - Cognito가 자격증명을 전담.
 # 조회 패턴이 Cognito sub로 GetItem 하나뿐이라 GSI 불필요, 트래픽도 적어 PAY_PER_REQUEST로 유휴 비용 없앰
 resource "aws_dynamodb_table" "user_profiles" {
-  name         = "${var.region_name}-user-profiles"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "userId"
+  name             = "${var.region_name}-user-profiles"
+  billing_mode     = "PAY_PER_REQUEST"
+  hash_key         = "userId"
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
     name = "userId"
@@ -18,10 +20,12 @@ resource "aws_dynamodb_table" "user_profiles" {
 # 상품 좋아요. "이 유저가 이 상품 좋아요?" GetItem, "이 유저가 좋아요한 전체 상품" Query(userId만) -
 # 둘 다 GSI 없이 해결되는 조회 패턴이라 hash+range 키만으로 충분
 resource "aws_dynamodb_table" "product_likes" {
-  name         = "${var.region_name}-product-likes"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "userId"
-  range_key    = "productId"
+  name             = "${var.region_name}-product-likes"
+  billing_mode     = "PAY_PER_REQUEST"
+  hash_key         = "userId"
+  range_key        = "productId"
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
     name = "userId"
@@ -41,10 +45,12 @@ resource "aws_dynamodb_table" "product_likes" {
 # PutItem의 ConditionExpression(attribute_not_exists)으로 경합 없이 강제할 수 있게 함.
 # 평균 별점은 저장하지 않고 조회 시 GSI 결과에서 계산 (이 규모에서 실시간 집계 카운터는 과함)
 resource "aws_dynamodb_table" "product_reviews" {
-  name         = "${var.region_name}-product-reviews"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "userId"
-  range_key    = "productId"
+  name             = "${var.region_name}-product-reviews"
+  billing_mode     = "PAY_PER_REQUEST"
+  hash_key         = "userId"
+  range_key        = "productId"
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
     name = "userId"
