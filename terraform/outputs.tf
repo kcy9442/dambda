@@ -1,6 +1,11 @@
 output "api_gateway_endpoint" {
-  description = "Node.js 백엔드로 연결되는 API Gateway 호출 URL"
+  description = "CloudFront를 통해 Node.js 백엔드로 연결되는 공개 API URL"
   value       = "https://${var.web_domain}/api"
+}
+
+output "api_gateway_healthcheck_endpoint" {
+  description = "배포 직후 CloudFront 전파와 무관하게 확인하는 서울 API Gateway 헬스체크 URL"
+  value       = module.api_gateway.api_endpoint
 }
 
 output "static_site_url" {

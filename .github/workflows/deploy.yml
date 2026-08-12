@@ -174,6 +174,7 @@ jobs:
           echo "cluster=$(terraform output -raw backend_ecs_cluster_name)" >> "$GITHUB_OUTPUT"
           echo "service=$(terraform output -raw backend_ecs_service_name)" >> "$GITHUB_OUTPUT"
           echo "api=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "api_healthcheck=$(terraform output -raw api_gateway_healthcheck_endpoint)" >> "$GITHUB_OUTPUT"
           echo "web_bucket=$(terraform output -raw static_site_bucket_name)" >> "$GITHUB_OUTPUT"
           echo "web_distribution=$(terraform output -raw static_site_distribution_id)" >> "$GITHUB_OUTPUT"
           echo "cognito_domain=$(terraform output -raw cognito_oauth_domain)" >> "$GITHUB_OUTPUT"
@@ -188,8 +189,8 @@ jobs:
           aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
       - name: API smoke test
         env:
-          API: ${{ steps.tf.outputs.api }}
-        run: curl --fail --retry 6 --retry-delay 10 "${API%/}/"
+          API_HEALTHCHECK: ${{ steps.tf.outputs.api_healthcheck }}
+        run: curl --fail --retry 6 --retry-all-errors --retry-delay 10 "${API_HEALTHCHECK%/}/"
       - name: Seed product catalog when empty
         working-directory: backend
         env:
