@@ -70,7 +70,7 @@ jobs:
         run: |
           mapfile -t bucket_resources < <(terraform state list | grep -E '(^|\.)aws_s3_bucket\.[^.]+$' || true)
           for address in "${bucket_resources[@]}"; do
-            bucket="$(terraform state show -no-color "$address" | awk -F' = ' '$1 ~ /^[[:space:]]*bucket$/ {gsub(/\"/, "", $2); print $2; exit}')"
+            bucket="$(terraform state show -no-color "$address" | awk '/^[[:space:]]*bucket[[:space:]]*=/ {value=$0; sub(/^[^=]*=[[:space:]]*/, "", value); gsub(/"/, "", value); print value; exit}')"
             test -n "$bucket" || { echo "Could not resolve bucket for $address"; exit 1; }
             echo "Emptying Terraform-managed bucket: $bucket"
             while true; do
