@@ -16,6 +16,10 @@ resource "aws_vpc_peering_connection_accepter" "us_accept" {
   auto_accept               = true
 
   tags = { Name = "${var.us_region_name}-accept-peering" }
+
+  timeouts {
+    create = "10m"
+  }
 }
 
 resource "aws_route" "seoul_to_us" {
