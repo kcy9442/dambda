@@ -30,6 +30,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _loadingReviews = true;
   bool _submitting = false;
   bool _moderationPending = false;
+  Review? _pendingReview;
   int _rating = 0;
   Uint8List? _photoBytes;
   String? _photoName;
@@ -127,14 +128,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         final approved =
             _result?.reviews.any((review) => review.userId == userId) ?? false;
         if (approved) {
-          if (mounted) setState(() => _moderationPending = false);
+          if (mounted) {
+            setState(() {
+              _moderationPending = false;
+              _pendingReview = null;
+            });
+          }
           return;
         }
       } catch (_) {
         // A transient refresh failure must not stop moderation polling.
       }
     }
-    if (mounted) setState(() => _moderationPending = false);
+    if (mounted) {
+      setState(() {
+        _moderationPending = false;
+        _pendingReview = null;
+      });
+    }
   }
 
   Future<void> _pickPhoto() async {
@@ -275,11 +286,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           photoMimeType: _photoMimeType,
         );
       }
-      // Pending reviews stay hidden until the asynchronous moderation worker
-      // changes their status to APPROVED.
       _removeReviewLocally(saved);
       _resetForm();
-      if (mounted) setState(() => _moderationPending = true);
+      if (mounted) {
+        setState(() {
+          _moderationPending = true;
+          _pendingReview = saved;
+        });
+      }
       unawaited(_waitForModeration(saved.userId));
     } on ApiException catch (e) {
       if (mounted) {
@@ -492,7 +506,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     onEdit: () => _startEdit(review),
                     onDelete: () => _confirmDelete(review),
                   ),
-                if ((_result?.reviews ?? []).isEmpty)
+                if (_pendingReview != null)
+                  _ReviewTile(
+                    review: _pendingReview!,
+                    isMine: true,
+                    pending: true,
+                    onEdit: () {},
+                    onDelete: () {},
+                  ),
+                if ((_result?.reviews ?? []).isEmpty && _pendingReview == null)
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -599,12 +621,14 @@ class _ReviewTile extends StatelessWidget {
   final bool isMine;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final bool pending;
 
   const _ReviewTile({
     required this.review,
     required this.isMine,
     required this.onEdit,
     required this.onDelete,
+    this.pending = false,
   });
 
   @override
@@ -636,7 +660,18 @@ class _ReviewTile extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     _StarRow(rating: review.rating, size: 12),
-                    if (isMine) ...[
+                    if (pending) ...[
+                      const SizedBox(width: 8),
+                      const Text(
+                        '검열 중',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    if (isMine && !pending) ...[
                       const Spacer(),
                       IconButton(
                         tooltip: l10n.updateReview,
