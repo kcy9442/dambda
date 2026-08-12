@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -28,6 +29,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   ReviewsResult? _result;
   bool _loadingReviews = true;
   bool _submitting = false;
+  bool _moderationPending = false;
   int _rating = 0;
   Uint8List? _photoBytes;
   String? _photoName;
@@ -104,8 +106,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     context.go(parent);
   }
 
-  Future<void> _loadReviews() async {
-    setState(() => _loadingReviews = true);
+  Future<void> _loadReviews({bool showLoading = true}) async {
+    if (showLoading) setState(() => _loadingReviews = true);
     try {
       final lang = Localizations.localeOf(context).languageCode;
       final result = await _reviewService.list(widget.productId, lang: lang);
@@ -113,8 +115,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } catch (_) {
       // 조회 실패 시 목록은 비워둔 채로 두고 조용히 넘어감(로딩 인디케이터만 꺼짐)
     } finally {
-      if (mounted) setState(() => _loadingReviews = false);
+      if (mounted && showLoading) setState(() => _loadingReviews = false);
     }
+  }
+
+  Future<void> _waitForModeration(String userId) async {
+    for (var attempt = 0; attempt < 30 && mounted; attempt++) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+      try {
+        await _loadReviews(showLoading: false);
+        final approved =
+            _result?.reviews.any((review) => review.userId == userId) ?? false;
+        if (approved) {
+          if (mounted) setState(() => _moderationPending = false);
+          return;
+        }
+      } catch (_) {
+        // A transient refresh failure must not stop moderation polling.
+      }
+    }
+    if (mounted) setState(() => _moderationPending = false);
   }
 
   Future<void> _pickPhoto() async {
@@ -259,6 +279,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       // changes their status to APPROVED.
       _removeReviewLocally(saved);
       _resetForm();
+      if (mounted) setState(() => _moderationPending = true);
+      unawaited(_waitForModeration(saved.userId));
     } on ApiException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -485,7 +507,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
               ],
+              if (_moderationPending) ...[
+                const Divider(height: 32),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(child: Text('리뷰를 검열하고 있습니다...')),
+                    ],
+                  ),
+                ),
+              ],
               if ((!hasReviewed || _editing) &&
+                  !_moderationPending &&
                   authState.accessToken != null) ...[
                 const Divider(height: 32),
                 _ReviewForm(

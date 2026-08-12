@@ -127,7 +127,10 @@ resource "aws_lambda_function" "moderation" {
   role          = aws_iam_role.moderation_lambda_role.arn
   handler       = "index.handler"
   runtime       = "nodejs20.x"
-  timeout       = 10
+  # Translate, Bedrock Guardrails, Comprehend, and Rekognition can exceed ten
+  # seconds during cold starts. Keep this below the review queue's 300-second
+  # visibility timeout while allowing enough time for the complete workflow.
+  timeout = 30
 
   filename         = data.archive_file.moderation_lambda.output_path
   source_code_hash = data.archive_file.moderation_lambda.output_base64sha256
