@@ -34,8 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Destroy the stack represented by the merged production configuration.
-          ref: main
+          # Destroy with the same branch configuration selected at dispatch.
+          ref: ${{ github.ref_name }}
       - uses: hashicorp/setup-terraform@v3
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -54,6 +54,35 @@ jobs:
         run: |
           test -n "$TF_VAR_google_client_id" || { echo "production secret GOOGLE_CLIENT_ID is required"; exit 1; }
           test -n "$TF_VAR_google_client_secret" || { echo "production secret GOOGLE_CLIENT_SECRET is required"; exit 1; }
+      - name: Preserve Route 53 resources
+        working-directory: terraform
+        shell: bash
+        run: |
+          # Route 53 records and health checks must remain in AWS. Removing
+          # them from state excludes them from the destruction plan.
+          mapfile -t route53_resources < <(terraform state list | grep -E '(^|\.)aws_route53_(record|health_check)\.' || true)
+          if (( ${#route53_resources[@]} > 0 )); then
+            terraform state rm "${route53_resources[@]}"
+          fi
+      - name: Empty only Terraform-managed DAMBDA buckets
+        working-directory: terraform
+        shell: bash
+        run: |
+          mapfile -t bucket_resources < <(terraform state list | grep -E '(^|\.)aws_s3_bucket\.[^.]+$' || true)
+          for address in "${bucket_resources[@]}"; do
+            bucket="$(terraform state show -no-color "$address" | awk -F' = ' '$1 ~ /^[[:space:]]*bucket$/ {gsub(/\"/, "", $2); print $2; exit}')"
+            test -n "$bucket" || { echo "Could not resolve bucket for $address"; exit 1; }
+            echo "Emptying Terraform-managed bucket: $bucket"
+            while true; do
+              versions="$(aws s3api list-object-versions --bucket "$bucket" --output json)"
+              delete_payload="$(jq -c '{Objects: (((.Versions // []) + (.DeleteMarkers // [])) | map({Key, VersionId})), Quiet: true}' <<<"$versions")"
+              object_count="$(jq '.Objects | length' <<<"$delete_payload")"
+              if [[ "$object_count" == "0" ]]; then
+                break
+              fi
+              aws s3api delete-objects --bucket "$bucket" --delete "$delete_payload" >/dev/null
+            done
+          done
       - name: Create destruction plan
         working-directory: terraform
         env:
