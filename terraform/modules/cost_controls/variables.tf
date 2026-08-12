@@ -4,7 +4,7 @@ variable "region_name" {
 
 variable "enable_cost_controls" {
   type    = bool
-  default = false
+  default = true
 }
 
 variable "alert_email" {
@@ -24,5 +24,5 @@ variable "anomaly_threshold_usd" {
 
 variable "enable_anomaly_detection" {
   type    = bool
-  default = false
+  default = true
 }

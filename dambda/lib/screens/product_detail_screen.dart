@@ -37,31 +37,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? _editingExistingPhotoUrl;
   bool _photoRemoved = false;
 
-  void _upsertReviewLocally(Review saved) {
-    final reviews = [...?_result?.reviews];
-    final index = reviews.indexWhere(
-      (review) =>
-          review.userId == saved.userId && review.productId == saved.productId,
-    );
-    if (index >= 0) {
-      reviews[index] = saved;
-    } else {
-      reviews.insert(0, saved);
-    }
-    final average = reviews.isEmpty
-        ? 0.0
-        : reviews.fold<int>(0, (sum, review) => sum + review.rating) /
-              reviews.length;
-    setState(() {
-      _result = ReviewsResult(
-        reviews: reviews,
-        averageRating: average,
-        reviewCount: reviews.length,
-      );
-      _loadingReviews = false;
-    });
-  }
-
   void _removeReviewLocally(Review removed) {
     final reviews = [...?_result?.reviews]
       ..removeWhere(
@@ -280,7 +255,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           photoMimeType: _photoMimeType,
         );
       }
-      _upsertReviewLocally(saved);
+      // Pending reviews stay hidden until the asynchronous moderation worker
+      // changes their status to APPROVED.
+      _removeReviewLocally(saved);
       _resetForm();
     } on ApiException catch (e) {
       if (mounted) {

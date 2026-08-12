@@ -3,6 +3,7 @@ output "vpc_link_security_group_id" {
   description = "VPC Link ENI가 사용하는 보안 그룹 ID"
   value       = aws_security_group.vpc_link_sg.id
 }
+output "api_id" { value = aws_apigatewayv2_api.http_api_gateway.id }
 
 output "api_endpoint" {
   description = "HTTP API 호출 엔드포인트"

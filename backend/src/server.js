@@ -23,8 +23,32 @@ const requestDuration = new promClient.Histogram({
   registers: [metrics],
 });
 
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Cache-Control': 'no-store',
+  });
+  next();
+});
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '256kb', strict: true }));
+
+app.use((req, res, next) => {
+  // ALB health checks do not pass through CloudFront. All application routes
+  // require the secret header injected by the CloudFront API origin.
+  const isLocalMetrics = req.path === '/metrics' &&
+    (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1');
+  if (req.path === '/' || isLocalMetrics) return next();
+  const expected = config.originVerifySecret;
+  const received = req.get('x-dambda-origin-verify');
+  if (!expected || received !== expected) {
+    return res.status(403).json({ error: 'cloudfront origin verification failed' });
+  }
+  next();
+});
 
 app.use((req, res, next) => {
   const startedAt = process.hrtime.bigint();

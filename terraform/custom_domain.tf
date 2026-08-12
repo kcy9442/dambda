@@ -17,18 +17,11 @@ resource "aws_acm_certificate" "web" {
 
 resource "aws_route53_record" "web_certificate_validation" {
   provider = aws.seoul
-  for_each = {
-    for option in aws_acm_certificate.web.domain_validation_options : option.domain_name => {
-      name   = option.resource_record_name
-      record = option.resource_record_value
-      type   = option.resource_record_type
-    }
-  }
 
   zone_id         = data.aws_route53_zone.primary.zone_id
-  name            = each.value.name
-  type            = each.value.type
-  records         = [each.value.record]
+  name            = one(aws_acm_certificate.web.domain_validation_options).resource_record_name
+  type            = one(aws_acm_certificate.web.domain_validation_options).resource_record_type
+  records         = [one(aws_acm_certificate.web.domain_validation_options).resource_record_value]
   ttl             = 60
   allow_overwrite = true
 }
@@ -36,7 +29,7 @@ resource "aws_route53_record" "web_certificate_validation" {
 resource "aws_acm_certificate_validation" "web" {
   provider                = aws.us_east_1
   certificate_arn         = aws_acm_certificate.web.arn
-  validation_record_fqdns = [for record in aws_route53_record.web_certificate_validation : record.fqdn]
+  validation_record_fqdns = [aws_route53_record.web_certificate_validation.fqdn]
 }
 
 resource "aws_route53_record" "web_ipv4" {

@@ -61,7 +61,9 @@ async function queryReviewsByProduct(productId) {
     exclusiveStartKey = result.LastEvaluatedKey;
   } while (exclusiveStartKey);
 
-  return items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return items
+    .filter((item) => item.moderationStatus === 'APPROVED' || !item.moderationStatus)
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
 async function listAllReviews() {

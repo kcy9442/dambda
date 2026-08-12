@@ -1,6 +1,6 @@
 output "api_gateway_endpoint" {
   description = "Node.js 백엔드로 연결되는 API Gateway 호출 URL"
-  value       = module.api_gateway.api_endpoint
+  value       = "https://${var.web_domain}/api"
 }
 
 output "static_site_url" {

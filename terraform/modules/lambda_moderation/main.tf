@@ -84,7 +84,12 @@ resource "aws_iam_policy" "moderation_lambda_policy" {
     Statement = [
       {
         # Rekognition/Comprehend는 리소스 레벨 ARN을 지원하지 않는 AWS API 자체의 제약 - "*"가 맞음
-        Action   = ["rekognition:DetectModerationLabels", "comprehend:DetectToxicContent"]
+        Action = [
+          "rekognition:DetectModerationLabels",
+          "comprehend:DetectToxicContent",
+          "comprehend:DetectDominantLanguage",
+          "translate:TranslateText",
+        ]
         Effect   = "Allow"
         Resource = "*"
       },
@@ -97,6 +102,16 @@ resource "aws_iam_policy" "moderation_lambda_policy" {
         Action   = ["s3:GetObject"]
         Effect   = "Allow"
         Resource = "${var.review_photos_bucket_arn}/*"
+      },
+      {
+        Action   = ["s3:DeleteObject"]
+        Effect   = "Allow"
+        Resource = "${var.review_photos_bucket_arn}/*"
+      },
+      {
+        Action   = ["dynamodb:UpdateItem"]
+        Effect   = "Allow"
+        Resource = var.product_reviews_table_arn
       }
     ]
   })
@@ -122,6 +137,7 @@ resource "aws_lambda_function" "moderation" {
       BEDROCK_GUARDRAIL_ID          = aws_bedrock_guardrail.reviews.guardrail_id
       BEDROCK_GUARDRAIL_VERSION     = aws_bedrock_guardrail_version.reviews.version
       COMPREHEND_TOXICITY_THRESHOLD = "0.80"
+      PRODUCT_REVIEWS_TABLE_NAME    = var.product_reviews_table_name
     }
   }
 }

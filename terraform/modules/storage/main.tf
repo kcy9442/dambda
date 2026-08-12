@@ -1,5 +1,27 @@
 data "aws_caller_identity" "current" {}
 
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
+resource "aws_cloudfront_function" "strip_api_prefix" {
+  count   = var.api_origin_domain_name == "" ? 0 : 1
+  name    = "${var.region_name}-strip-api-prefix"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+  code    = <<-EOT
+    function handler(event) {
+      var request = event.request;
+      request.uri = request.uri.replace(/^\/api(?=\/|$)/, '') || '/';
+      return request;
+    }
+  EOT
+}
+
 # 정적 웹 호스팅용 S3 버킷 (버킷 이름 전역 유일성 확보를 위해 계정 ID 접미사 사용)
 resource "aws_s3_bucket" "static_site" {
   bucket = "${var.region_name}-static-site-${data.aws_caller_identity.current.account_id}"
@@ -7,26 +29,21 @@ resource "aws_s3_bucket" "static_site" {
   tags = { Name = "${var.region_name}-static-site" }
 }
 
-resource "aws_s3_bucket_website_configuration" "static_site" {
-  bucket = aws_s3_bucket.static_site.id
-
-  index_document {
-    suffix = "index.html"
-  }
-
-  error_document {
-    key = "index.html"
-  }
-}
-
-# 테스트용: CloudFront 없이 버킷을 직접 퍼블릭으로 열어둠 (추후 CloudFront+OAC로 교체 예정)
 resource "aws_s3_bucket_public_access_block" "static_site" {
   bucket = aws_s3_bucket.static_site.id
 
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_cloudfront_origin_access_control" "static_site" {
+  name                              = "${var.region_name}-static-site-oac"
+  description                       = "Allow CloudFront signed access to the private static site bucket"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
 }
 
 resource "aws_s3_bucket_policy" "static_site" {
@@ -36,11 +53,16 @@ resource "aws_s3_bucket_policy" "static_site" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "PublicReadGetObject"
+        Sid       = "AllowCloudFrontRead"
         Effect    = "Allow"
-        Principal = "*"
+        Principal = { Service = "cloudfront.amazonaws.com" }
         Action    = "s3:GetObject"
         Resource  = "${aws_s3_bucket.static_site.arn}/*"
+        Condition = {
+          StringLike = {
+            "AWS:SourceArn" = "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/*"
+          }
+        }
       }
     ]
   })
@@ -62,22 +84,57 @@ resource "aws_cloudfront_distribution" "static_site" {
   default_root_object = "index.html"
   price_class         = "PriceClass_200"
   aliases             = var.custom_domain == "" ? [] : [var.custom_domain]
-  web_acl_id          = var.waf_web_acl_arn
 
   origin {
-    domain_name = aws_s3_bucket_website_configuration.static_site.website_endpoint
-    origin_id   = "static-site-s3-website"
+    domain_name              = aws_s3_bucket.static_site.bucket_regional_domain_name
+    origin_id                = "static-site-s3-website"
+    origin_access_control_id = aws_cloudfront_origin_access_control.static_site.id
 
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
+    s3_origin_config {
+      origin_access_identity = ""
+    }
+  }
+
+  dynamic "origin" {
+    for_each = var.enable_failover_origin ? [1] : []
+    content {
+      domain_name              = var.failover_bucket_domain_name
+      origin_id                = "static-site-s3-failover"
+      origin_access_control_id = aws_cloudfront_origin_access_control.static_site.id
+      s3_origin_config { origin_access_identity = "" }
+    }
+  }
+
+  dynamic "origin" {
+    for_each = var.api_origin_domain_name == "" ? [] : [1]
+    content {
+      domain_name = var.api_origin_domain_name
+      origin_id   = "api-gateway"
+      custom_header {
+        name  = "X-Dambda-Origin-Verify"
+        value = var.api_origin_verify_secret
+      }
+      custom_origin_config {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "https-only"
+        origin_ssl_protocols   = ["TLSv1.2"]
+      }
+    }
+  }
+
+  dynamic "origin_group" {
+    for_each = var.enable_failover_origin ? [1] : []
+    content {
+      origin_id = "static-site-origin-group"
+      failover_criteria { status_codes = [403, 404, 500, 502, 503, 504] }
+      member { origin_id = "static-site-s3-website" }
+      member { origin_id = "static-site-s3-failover" }
     }
   }
 
   default_cache_behavior {
-    target_origin_id       = "static-site-s3-website"
+    target_origin_id       = var.enable_failover_origin ? "static-site-origin-group" : "static-site-s3-website"
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
     cached_methods         = ["GET", "HEAD"]
@@ -87,6 +144,24 @@ resource "aws_cloudfront_distribution" "static_site" {
       query_string = false
       cookies {
         forward = "none"
+      }
+    }
+  }
+
+  dynamic "ordered_cache_behavior" {
+    for_each = var.api_origin_domain_name == "" ? [] : [1]
+    content {
+      path_pattern             = "/api/*"
+      target_origin_id         = "api-gateway"
+      viewer_protocol_policy   = "redirect-to-https"
+      allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods           = ["GET", "HEAD"]
+      compress                 = true
+      cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+      origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+      function_association {
+        event_type   = "viewer-request"
+        function_arn = aws_cloudfront_function.strip_api_prefix[0].arn
       }
     }
   }

@@ -11,6 +11,8 @@ output "cloudfront_distribution_id" {
 output "cloudfront_domain_name" {
   value = aws_cloudfront_distribution.static_site.domain_name
 }
+output "bucket_arn" { value = aws_s3_bucket.static_site.arn }
+output "bucket_regional_domain_name" { value = aws_s3_bucket.static_site.bucket_regional_domain_name }
 
 output "cloudfront_distribution_arn" {
   value = aws_cloudfront_distribution.static_site.arn
@@ -27,7 +29,7 @@ output "website_endpoint" {
 
 output "s3_website_endpoint" {
   description = "원본 S3 정적 웹 호스팅 엔드포인트 URL"
-  value       = "http://${aws_s3_bucket_website_configuration.static_site.website_endpoint}"
+  value       = "https://${aws_cloudfront_distribution.static_site.domain_name}"
 }
 
 output "review_photos_bucket_name" {

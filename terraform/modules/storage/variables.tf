@@ -15,8 +15,25 @@ variable "acm_certificate_arn" {
   default     = null
 }
 
-variable "waf_web_acl_arn" {
-  description = "Optional CloudFront-scope WAFv2 Web ACL ARN"
+variable "failover_bucket_domain_name" {
+  description = "Optional cross-region S3 origin used by CloudFront origin failover"
   type        = string
-  default     = null
+  default     = ""
+}
+
+variable "enable_failover_origin" {
+  description = "Whether to configure the secondary S3 origin and CloudFront origin group"
+  type        = bool
+  default     = false
+}
+
+variable "api_origin_domain_name" {
+  type    = string
+  default = ""
+}
+
+variable "api_origin_verify_secret" {
+  type      = string
+  sensitive = true
+  default   = ""
 }

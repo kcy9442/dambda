@@ -20,6 +20,7 @@ jobs:
           cache-dependency-path: |
             backend/package-lock.json
             lambda/moderation/package-lock.json
+            lambda/dr-failover/package-lock.json
       - run: npm ci
         working-directory: backend
       - name: Check backend JavaScript
@@ -30,6 +31,10 @@ jobs:
         working-directory: lambda/moderation
       - run: node --check index.js
         working-directory: lambda/moderation
+      - run: npm ci
+        working-directory: lambda/dr-failover
+      - run: node --check index.js
+        working-directory: lambda/dr-failover
       - run: docker build -t dambda-backend:ci .
         working-directory: backend
 

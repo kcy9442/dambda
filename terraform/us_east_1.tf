@@ -41,8 +41,9 @@ module "storage_us" {
 }
 
 module "compute_us" {
-  source    = "./modules/compute"
-  providers = { aws = aws.us_east_1 }
+  source     = "./modules/compute"
+  providers  = { aws = aws.us_east_1 }
+  depends_on = [aws_secretsmanager_secret_version.cloudfront_origin_us]
 
   vpc_id                = module.network_us.vpc_id
   private_subnet_ids    = module.network_us.private_subnet_ids
@@ -50,7 +51,7 @@ module "compute_us" {
   target_group_arn      = module.alb_us.target_group_arn
   region_name           = var.us_region_name
   aws_region            = var.us_aws_region
-  resource_region       = var.aws_region
+  resource_region       = var.us_aws_region
   container_port        = var.container_port
 
   # 기존 사용자와 관리자 권한을 유지하기 위해 서울 Cognito를 공유한다.
@@ -60,21 +61,25 @@ module "compute_us" {
 
   # 상품, 리뷰, 좋아요 및 프로필 데이터도 현재 서울 테이블을 공유한다.
   dynamodb_table_name        = module.dynamodb.table_name
-  dynamodb_table_arn         = module.dynamodb.table_arn
+  dynamodb_table_arn         = module.dynamodb.us_table_arn
   product_likes_table_name   = module.dynamodb.product_likes_table_name
-  product_likes_table_arn    = module.dynamodb.product_likes_table_arn
+  product_likes_table_arn    = module.dynamodb.us_product_likes_table_arn
   product_reviews_table_name = module.dynamodb.product_reviews_table_name
-  product_reviews_table_arn  = module.dynamodb.product_reviews_table_arn
+  product_reviews_table_arn  = module.dynamodb.us_product_reviews_table_arn
   product_catalog_table_name = module.dynamodb.product_catalog_table_name
-  product_catalog_table_arn  = module.dynamodb.product_catalog_table_arn
+  product_catalog_table_arn  = module.dynamodb.us_product_catalog_table_arn
 
   # 관리자 상품 이미지와 리뷰 사진도 기존 객체를 그대로 사용한다.
-  review_photos_bucket_name    = module.storage.review_photos_bucket_name
-  review_photos_bucket_arn     = module.storage.review_photos_bucket_arn
-  review_photos_bucket_domain  = module.storage.review_photos_bucket_regional_domain
-  product_images_bucket_name   = module.storage.product_images_bucket_name
-  product_images_bucket_arn    = module.storage.product_images_bucket_arn
-  product_images_bucket_domain = module.storage.product_images_bucket_domain
+  review_photos_bucket_name    = module.storage_us.review_photos_bucket_name
+  review_photos_bucket_arn     = module.storage_us.review_photos_bucket_arn
+  review_photos_bucket_domain  = module.storage_us.review_photos_bucket_regional_domain
+  product_images_bucket_name   = module.storage_us.product_images_bucket_name
+  product_images_bucket_arn    = module.storage_us.product_images_bucket_arn
+  product_images_bucket_domain = module.storage_us.product_images_bucket_domain
+
+  ecr_repository_name         = "${var.region_name}-backend"
+  origin_verify_secret_arn    = aws_secretsmanager_secret.cloudfront_origin_us.arn
+  enable_origin_verify_secret = true
 
   moderation_lambda_arn  = module.lambda_moderation.lambda_arn
   moderation_lambda_name = module.lambda_moderation.lambda_name

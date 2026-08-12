@@ -60,8 +60,8 @@ resource "aws_route_table" "public" {
 
 # 퍼블릭 서브넷 연결
 resource "aws_route_table_association" "public" {
-  for_each       = aws_subnet.public
-  subnet_id      = each.value.id
+  for_each       = local.public_subnets
+  subnet_id      = aws_subnet.public[each.key].id
   route_table_id = aws_route_table.public.id
 }
 

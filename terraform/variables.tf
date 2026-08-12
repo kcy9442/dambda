@@ -65,10 +65,10 @@ variable "google_client_secret" {
   sensitive   = true
 }
 
-variable "waf_rate_limit_per_5_minutes" {
-  description = "CloudFront WAF requests allowed per source IP in a five-minute window"
-  type        = number
-  default     = 2000
+variable "api_domain" {
+  description = "Multi-region API hostname managed with Route 53 failover routing"
+  type        = string
+  default     = "api.shinning.cloud"
 }
 
 variable "enable_managed_prometheus" {
@@ -84,9 +84,9 @@ variable "enable_managed_grafana" {
 }
 
 variable "enable_cost_controls" {
-  description = "Create AWS Budget and Cost Anomaly Detection after an alert email is configured"
+  description = "Create an AWS Budget and related cost controls"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "cost_alert_email" {
@@ -110,7 +110,7 @@ variable "cost_anomaly_threshold_usd" {
 variable "enable_cost_anomaly_detection" {
   description = "Create a new Cost Explorer anomaly monitor when account monitor capacity is available"
   type        = bool
-  default     = false
+  default     = true
 }
 
 # 미국(us-east-1) pilot-light 재해복구 리전 설정

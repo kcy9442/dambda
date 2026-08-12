@@ -15,6 +15,14 @@ Create GitHub environments `dev-plan` and `production`. Require reviewers on `pr
 - `TF_STATE_KEY` (for example `dambda/production.tfstate`)
 - `TF_STATE_REGION`
 - `BEDROCK_GUARDRAIL_PROFILE_ARN` when the Standard tier requires cross-region inference
+- `COST_ALERT_EMAIL` (required; receives AWS Budget and Cost Anomaly alerts)
+- `MONTHLY_BUDGET_USD` (optional; defaults to `25`)
+- `COST_ANOMALY_THRESHOLD_USD` (optional; defaults to `5`)
+
+AWS Budget and Cost Anomaly Detection are enabled by default. Set
+`ENABLE_COST_CONTROLS=false` only when intentionally disabling all cost alerts, or
+`ENABLE_COST_ANOMALY_DETECTION=false` to keep the monthly budget while disabling
+the anomaly monitor and subscription.
 
 Add the rotated Tavily key as the `TAVILY_API_KEY` **secret** in the `production` environment. Never add it as a repository variable or commit it to `.env`. The deployment writes it to AWS Secrets Manager and ECS receives it through the task definition secret reference.
 

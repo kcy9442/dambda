@@ -136,14 +136,6 @@ locals {
 
   # 검열 Lambda 호출 권한. 원래 lambda:InvokeFunction이 Resource="*"인 플레이스홀더로 남아있었는데
   # (아직 실제 소비자가 없어서), 이번에 처음으로 실사용처가 생겨서 이 특정 Lambda ARN으로 좁힘
-  moderation_lambda_statements = var.moderation_lambda_arn != "" ? [
-    {
-      Action   = ["lambda:InvokeFunction"]
-      Effect   = "Allow"
-      Resource = var.moderation_lambda_arn
-    }
-  ] : []
-
   # 상품 카탈로그는 백엔드가 읽기만 함 - 쓰기(시딩)는 개발자가 seed 스크립트를
   # 직접 자기 자격증명으로 실행하므로 태스크 역할에는 Put/Delete를 주지 않음
   product_catalog_statements = var.product_catalog_table_arn != "" ? [
@@ -174,6 +166,20 @@ locals {
   ] : []
 }
 
+resource "aws_iam_role_policy" "ecs_execution_origin_secret" {
+  count = var.enable_origin_verify_secret ? 1 : 0
+  name  = "${var.region_name}-ecs-origin-verify-secret"
+  role  = aws_iam_role.ecs_task_execution_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = ["secretsmanager:GetSecretValue"]
+      Effect   = "Allow"
+      Resource = var.origin_verify_secret_arn
+    }]
+  })
+}
+
 # AMP + 로그인·회원가입/좋아요/리뷰 백엔드가 쓰는 DynamoDB/Cognito/S3/Lambda 권한
 resource "aws_iam_policy" "ecs_task_policy" {
   name = "${var.region_name}-ecs-task-policy"
@@ -200,7 +206,6 @@ resource "aws_iam_policy" "ecs_task_policy" {
       local.product_likes_statements,
       local.product_reviews_statements,
       local.review_photos_statements,
-      local.moderation_lambda_statements,
       local.product_catalog_statements,
       local.product_images_statements,
       local.async_review_statements,
@@ -215,7 +220,7 @@ resource "aws_iam_role_policy_attachment" "task_permissions" {
 
 # 백엔드 컨테이너 이미지 저장소 (로그인/회원가입 Express 앱)
 resource "aws_ecr_repository" "backend" {
-  name                 = "${var.region_name}-backend"
+  name                 = var.ecr_repository_name != "" ? var.ecr_repository_name : "${var.region_name}-backend"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 }
@@ -266,16 +271,16 @@ resource "aws_ecs_task_definition" "main" {
         { name = "PRODUCT_REVIEWS_TABLE_NAME", value = var.product_reviews_table_name },
         { name = "S3_REVIEW_PHOTOS_BUCKET", value = var.review_photos_bucket_name },
         { name = "S3_REVIEW_PHOTOS_DOMAIN", value = var.review_photos_bucket_domain },
-        { name = "MODERATION_LAMBDA_NAME", value = var.moderation_lambda_name },
         { name = "PRODUCT_CATALOG_TABLE_NAME", value = var.product_catalog_table_name },
         { name = "S3_PRODUCT_IMAGES_BUCKET", value = var.product_images_bucket_name },
         { name = "S3_PRODUCT_IMAGES_DOMAIN", value = var.product_images_bucket_domain },
         { name = "REVIEW_EVENTS_QUEUE_URL", value = var.review_events_queue_url },
         { name = "REVIEW_WORKFLOW_ARN", value = var.review_workflow_arn },
       ]
-      secrets = var.enable_tavily_secret ? [
-        { name = "TAVILY_API_KEY", valueFrom = var.tavily_api_key_secret_arn }
-      ] : []
+      secrets = concat(
+        var.enable_tavily_secret ? [{ name = "TAVILY_API_KEY", valueFrom = var.tavily_api_key_secret_arn }] : [],
+        var.enable_origin_verify_secret ? [{ name = "ORIGIN_VERIFY_SECRET", valueFrom = var.origin_verify_secret_arn }] : []
+      )
       logConfiguration = {
         logDriver = "awslogs"
         options = {

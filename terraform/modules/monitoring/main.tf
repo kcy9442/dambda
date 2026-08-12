@@ -129,3 +129,31 @@ resource "aws_cloudwatch_dashboard" "operations" {
     ]
   })
 }
+
+resource "aws_cloudwatch_metric_alarm" "api_server_errors" {
+  alarm_name          = "${var.region_name}-api-5xx"
+  alarm_description   = "HTTP API returned at least five server errors in five minutes"
+  namespace           = "AWS/ApiGateway"
+  metric_name         = "5xx"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  dimensions          = { ApiId = var.api_gateway_id }
+}
+
+resource "aws_cloudwatch_metric_alarm" "review_dlq_messages" {
+  alarm_name          = "${var.region_name}-review-dlq-messages"
+  alarm_description   = "Review moderation messages reached the dead-letter queue"
+  namespace           = "AWS/SQS"
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  statistic           = "Maximum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  dimensions          = { QueueName = var.review_dlq_name }
+}

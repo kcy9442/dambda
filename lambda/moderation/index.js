@@ -1,6 +1,9 @@
 const { BedrockRuntimeClient, ApplyGuardrailCommand } = require('@aws-sdk/client-bedrock-runtime');
 const { ComprehendClient, DetectToxicContentCommand } = require('@aws-sdk/client-comprehend');
 const { RekognitionClient, DetectModerationLabelsCommand } = require('@aws-sdk/client-rekognition');
+const { DynamoDBClient, UpdateItemCommand } = require('@aws-sdk/client-dynamodb');
+const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { TranslateClient, TranslateTextCommand } = require('@aws-sdk/client-translate');
 
 const region = process.env.AWS_REGION;
 const guardrailId = process.env.BEDROCK_GUARDRAIL_ID;
@@ -8,6 +11,10 @@ const guardrailVersion = process.env.BEDROCK_GUARDRAIL_VERSION;
 const bedrock = new BedrockRuntimeClient({ region });
 const comprehend = new ComprehendClient({ region });
 const rekognition = new RekognitionClient({ region });
+const dynamodb = new DynamoDBClient({ region });
+const s3 = new S3Client({ region });
+const translate = new TranslateClient({ region });
+const reviewsTableName = process.env.PRODUCT_REVIEWS_TABLE_NAME;
 const MIN_MODERATION_CONFIDENCE = 70;
 const COMPREHEND_TOXICITY_THRESHOLD = Number(process.env.COMPREHEND_TOXICITY_THRESHOLD || '0.80');
 
@@ -51,6 +58,26 @@ function isEnglishText(text) {
   return /^[\x00-\x7F]+$/.test(text) && /[A-Za-z]/.test(text);
 }
 
+async function translateToEnglish(text) {
+  const normalized = text && text.trim();
+  if (!normalized) return { text: '', sourceLanguage: null, translated: false };
+  if (isEnglishText(normalized)) {
+    return { text: normalized, sourceLanguage: 'en', translated: false };
+  }
+
+  const result = await translate.send(new TranslateTextCommand({
+    Text: normalized,
+    SourceLanguageCode: 'auto',
+    TargetLanguageCode: 'en',
+  }));
+  if (!result.TranslatedText) throw new Error('Translate returned no English text');
+  return {
+    text: result.TranslatedText,
+    sourceLanguage: result.SourceLanguageCode || 'auto',
+    translated: true,
+  };
+}
+
 async function checkComprehendToxicity(text) {
   const normalized = text && text.trim();
   if (!normalized || !isEnglishText(normalized)) return { approved: true, reasons: [] };
@@ -83,20 +110,56 @@ async function checkImage(imageBucket, imageKey) {
 }
 
 exports.handler = async (event) => {
-  const { text, imageBucket, imageKey } = event || {};
+  const { userId, productId, text, imageBucket, imageKey, moderationRequestId } = event || {};
+  if (!userId || !productId || !moderationRequestId || !reviewsTableName) {
+    throw new Error('review identity and PRODUCT_REVIEWS_TABLE_NAME are required');
+  }
+  let moderation;
   try {
+    const english = await translateToEnglish(text);
     const [textResult, comprehendResult, imageResult] = await Promise.all([
-      checkText(text),
-      checkComprehendToxicity(text),
+      checkText(english.text),
+      checkComprehendToxicity(english.text),
       checkImage(imageBucket, imageKey),
     ]);
-    return {
+    moderation = {
       approved: textResult.approved && comprehendResult.approved && imageResult.approved,
       reasons: [...textResult.reasons, ...comprehendResult.reasons, ...imageResult.reasons],
+      sourceLanguage: english.sourceLanguage,
+      translatedForModeration: english.translated,
     };
   } catch (err) {
     // Fail closed: unchecked content must never be persisted.
     console.error('moderation check failed', err);
-    return { approved: false, reasons: ['moderation_service_error'] };
+    moderation = { approved: false, reasons: ['moderation_service_error'] };
   }
+
+  const status = moderation.approved ? 'APPROVED' : 'REJECTED';
+  const updateExpression = moderation.approved
+    ? 'SET moderationStatus = :status, moderationReasons = :reasons, moderatedAt = :now REMOVE moderationExpiresAt'
+    : 'SET moderationStatus = :status, moderationReasons = :reasons, moderatedAt = :now REMOVE moderationExpiresAt, photoUrl, photoKey';
+  try {
+    await dynamodb.send(new UpdateItemCommand({
+      TableName: reviewsTableName,
+      Key: { userId: { S: userId }, productId: { S: productId } },
+      UpdateExpression: updateExpression,
+      ConditionExpression: 'moderationRequestId = :requestId',
+      ExpressionAttributeValues: {
+        ':status': { S: status },
+        ':reasons': { L: moderation.reasons.map((reason) => ({ S: reason })) },
+        ':now': { S: new Date().toISOString() },
+        ':requestId': { S: moderationRequestId },
+      },
+    }));
+  } catch (err) {
+    if (err.name === 'ConditionalCheckFailedException') {
+      return { ignored: true, reason: 'stale_moderation_request', moderationRequestId };
+    }
+    throw err;
+  }
+
+  if (!moderation.approved && imageBucket && imageKey) {
+    await s3.send(new DeleteObjectCommand({ Bucket: imageBucket, Key: imageKey }));
+  }
+  return { ...moderation, status, userId, productId, moderationRequestId };
 };

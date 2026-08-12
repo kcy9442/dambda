@@ -31,3 +31,12 @@ output "product_catalog_table_name" {
 output "product_catalog_table_arn" {
   value = aws_dynamodb_table.product_catalog.arn
 }
+
+output "product_catalog_stream_arn" {
+  value = aws_dynamodb_table.product_catalog.stream_arn
+}
+
+output "us_table_arn" { value = replace(aws_dynamodb_table.user_profiles.arn, "ap-northeast-2", "us-east-1") }
+output "us_product_likes_table_arn" { value = replace(aws_dynamodb_table.product_likes.arn, "ap-northeast-2", "us-east-1") }
+output "us_product_reviews_table_arn" { value = replace(aws_dynamodb_table.product_reviews.arn, "ap-northeast-2", "us-east-1") }
+output "us_product_catalog_table_arn" { value = replace(aws_dynamodb_table.product_catalog.arn, "ap-northeast-2", "us-east-1") }

@@ -13,6 +13,9 @@ terraform/.terraform/
 terraform-bootstrap/.terraform/
 terraform-bootstrap/terraform.tfvars
 terraform/.tmp/
+!terraform/.tmp/
+terraform/.tmp/*
+!terraform/.tmp/.gitkeep
 terraform/*.tfstate
 terraform/*.tfstate.*
 terraform/*.tfplan

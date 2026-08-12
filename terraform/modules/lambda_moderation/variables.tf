@@ -8,6 +8,14 @@ variable "review_photos_bucket_arn" {
   type        = string
 }
 
+variable "product_reviews_table_name" {
+  type = string
+}
+
+variable "product_reviews_table_arn" {
+  type = string
+}
+
 variable "guardrail_profile_identifier" {
   description = "Bedrock Guardrails Standard cross-region inference profile ARN"
   type        = string

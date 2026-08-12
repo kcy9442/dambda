@@ -11,6 +11,8 @@ resource "aws_dynamodb_table" "user_profiles" {
   }
 
   tags = { Name = "${var.region_name}-user-profiles" }
+
+  replica { region_name = "us-east-1" }
 }
 
 # 상품 좋아요. "이 유저가 이 상품 좋아요?" GetItem, "이 유저가 좋아요한 전체 상품" Query(userId만) -
@@ -31,6 +33,8 @@ resource "aws_dynamodb_table" "product_likes" {
   }
 
   tags = { Name = "${var.region_name}-product-likes" }
+
+  replica { region_name = "us-east-1" }
 }
 
 # 상품 리뷰(별점+텍스트+선택적 사진). userId를 해시키로 둬서 "유저당 상품 1개 리뷰"를
@@ -63,15 +67,24 @@ resource "aws_dynamodb_table" "product_reviews" {
     projection_type = "ALL"
   }
 
+  ttl {
+    attribute_name = "moderationExpiresAt"
+    enabled        = true
+  }
+
   tags = { Name = "${var.region_name}-product-reviews" }
+
+  replica { region_name = "us-east-1" }
 }
 
 # 상품 카탈로그 (이름/가격/판매처/추천이유/사진). 조회는 항상 "전체 목록" 하나뿐이고
 # 카테고리 필터는 클라이언트에서 하므로 GSI 없이 hash key(itemId)만으로 충분
 resource "aws_dynamodb_table" "product_catalog" {
-  name         = "${var.region_name}-product-catalog"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "itemId"
+  name             = "${var.region_name}-product-catalog"
+  billing_mode     = "PAY_PER_REQUEST"
+  hash_key         = "itemId"
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
     name = "itemId"
@@ -79,4 +92,6 @@ resource "aws_dynamodb_table" "product_catalog" {
   }
 
   tags = { Name = "${var.region_name}-product-catalog" }
+
+  replica { region_name = "us-east-1" }
 }

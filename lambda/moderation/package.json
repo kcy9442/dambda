@@ -7,6 +7,9 @@
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.658.0",
     "@aws-sdk/client-comprehend": "^3.1106.0",
-    "@aws-sdk/client-rekognition": "^3.658.0"
+    "@aws-sdk/client-dynamodb": "^3.658.0",
+    "@aws-sdk/client-rekognition": "^3.658.0",
+    "@aws-sdk/client-s3": "^3.658.0",
+    "@aws-sdk/client-translate": "^3.658.0"
   }
 }

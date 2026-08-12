@@ -66,7 +66,7 @@ class ReviewService {
     );
     final response = await http.Response.fromStream(streamedResponse);
 
-    if (response.statusCode != 201) {
+    if (response.statusCode != 202) {
       throw ApiException(response.statusCode, _errorMessage(response));
     }
     return Review.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
@@ -106,7 +106,7 @@ class ReviewService {
     );
     final response = await http.Response.fromStream(streamedResponse);
 
-    if (response.statusCode != 200) {
+    if (response.statusCode != 202) {
       throw ApiException(response.statusCode, _errorMessage(response));
     }
     return Review.fromJson(jsonDecode(response.body) as Map<String, dynamic>);

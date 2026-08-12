@@ -175,6 +175,22 @@ variable "enable_tavily_secret" {
   default     = false
 }
 
+variable "origin_verify_secret_arn" {
+  type    = string
+  default = ""
+}
+
+variable "enable_origin_verify_secret" {
+  description = "Whether the ECS task reads the CloudFront origin verification secret"
+  type        = bool
+  default     = false
+}
+
+variable "ecr_repository_name" {
+  type    = string
+  default = ""
+}
+
 variable "review_events_queue_arn" {
   description = "SQS queue used by the asynchronous review pipeline"
   type        = string

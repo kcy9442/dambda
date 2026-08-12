@@ -36,7 +36,8 @@ module "api_gateway" {
   private_subnet_ids = module.network.private_subnet_ids
 
   # ALB 모듈에서 출력된 리스너로 프록시
-  alb_listener_arn = module.alb.listener_arn
+  alb_listener_arn     = module.alb.listener_arn
+  cors_allowed_origins = ["https://${var.web_domain}"]
 }
 
 # 4. 정적 웹 호스팅용 S3 버킷 (독립적, 다른 모듈과 의존관계 없음)
@@ -44,19 +45,13 @@ module "storage" {
   source    = "./modules/storage"
   providers = { aws = aws.seoul }
 
-  region_name         = var.region_name
-  custom_domain       = var.web_domain
-  acm_certificate_arn = aws_acm_certificate_validation.web.certificate_arn
-  waf_web_acl_arn     = module.waf.web_acl_arn
-}
-
-# CloudFront-scoped WAF must be created with the us-east-1 provider.
-module "waf" {
-  source    = "./modules/waf"
-  providers = { aws = aws.us_east_1 }
-
-  region_name              = var.region_name
-  rate_limit_per_5_minutes = var.waf_rate_limit_per_5_minutes
+  region_name                 = var.region_name
+  custom_domain               = var.web_domain
+  acm_certificate_arn         = aws_acm_certificate_validation.web.certificate_arn
+  failover_bucket_domain_name = module.storage_us.bucket_regional_domain_name
+  enable_failover_origin      = true
+  api_origin_domain_name      = var.api_domain
+  api_origin_verify_secret    = random_password.cloudfront_origin.result
 }
 
 # 5. 로그인/회원가입 인증 (독립적, 다른 모듈과 의존관계 없음)
@@ -85,11 +80,12 @@ module "lambda_moderation" {
 
   region_name                  = var.region_name
   review_photos_bucket_arn     = module.storage.review_photos_bucket_arn
+  product_reviews_table_name   = module.dynamodb.product_reviews_table_name
+  product_reviews_table_arn    = module.dynamodb.product_reviews_table_arn
   guardrail_profile_identifier = var.bedrock_guardrail_profile_identifier
 }
 
-# Approved reviews can be handed to this queue by the Step Functions workflow.
-# The current backend remains synchronous until its review route is migrated.
+# Review requests are buffered in SQS and delivered to Step Functions by EventBridge Pipes.
 module "async_review_pipeline" {
   source    = "./modules/async_review_pipeline"
   providers = { aws = aws.seoul }
@@ -110,6 +106,8 @@ module "monitoring" {
   ecs_service_name       = "${var.region_name}-service"
   moderation_lambda_name = module.lambda_moderation.lambda_name
   review_queue_name      = module.async_review_pipeline.queue_name
+  review_dlq_name        = module.async_review_pipeline.dlq_name
+  api_gateway_id         = module.api_gateway.api_id
   enable_prometheus      = var.enable_managed_prometheus
   enable_grafana         = var.enable_managed_grafana
 }
@@ -135,8 +133,9 @@ resource "aws_secretsmanager_secret" "tavily_api_key" {
 
 # 8. 컴퓨트 모듈 호출
 module "compute" {
-  source    = "./modules/compute"
-  providers = { aws = aws.seoul }
+  source     = "./modules/compute"
+  providers  = { aws = aws.seoul }
+  depends_on = [aws_secretsmanager_secret_version.cloudfront_origin_seoul]
 
   # 네트워크 모듈에서 출력된 값 연결
   vpc_id             = module.network.vpc_id
@@ -177,6 +176,8 @@ module "compute" {
   review_events_queue_arn          = module.async_review_pipeline.queue_arn
   review_events_queue_url          = module.async_review_pipeline.queue_url
   review_workflow_arn              = module.async_review_pipeline.state_machine_arn
+  origin_verify_secret_arn         = aws_secretsmanager_secret.cloudfront_origin_seoul.arn
+  enable_origin_verify_secret      = true
   enable_prometheus_collector      = var.enable_managed_prometheus
   prometheus_remote_write_endpoint = module.monitoring.prometheus_remote_write_endpoint
 
@@ -185,8 +186,8 @@ module "compute" {
   aws_region     = var.aws_region
   container_port = var.container_port
 
-  # 개발 환경은 태스크 1개로 시작하고 최대 2개까지만 자동 확장한다.
-  desired_count            = 1
-  autoscaling_min_capacity = 1
+  # Architecture baseline: keep two tasks spread across the two private AZs.
+  desired_count            = 2
+  autoscaling_min_capacity = 2
   autoscaling_max_capacity = 2
 }

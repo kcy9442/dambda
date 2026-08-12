@@ -13,5 +13,7 @@ module.exports = {
   reviewPhotosBucket: process.env.S3_REVIEW_PHOTOS_BUCKET,
   reviewPhotosDomain: process.env.S3_REVIEW_PHOTOS_DOMAIN,
   moderationLambdaName: process.env.MODERATION_LAMBDA_NAME,
+  reviewEventsQueueUrl: process.env.REVIEW_EVENTS_QUEUE_URL,
+  originVerifySecret: process.env.ORIGIN_VERIFY_SECRET,
   tavilyApiKey: process.env.TAVILY_API_KEY,
 };
