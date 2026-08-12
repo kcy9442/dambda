@@ -59,6 +59,8 @@ resource "aws_apigatewayv2_api_mapping" "api_seoul" {
   api_id      = module.api_gateway.api_id
   domain_name = aws_apigatewayv2_domain_name.api_seoul.id
   stage       = "$default"
+
+  depends_on = [module.api_gateway]
 }
 
 resource "aws_apigatewayv2_api_mapping" "api_us" {
@@ -66,6 +68,8 @@ resource "aws_apigatewayv2_api_mapping" "api_us" {
   api_id      = module.api_gateway_us.api_id
   domain_name = aws_apigatewayv2_domain_name.api_us.id
   stage       = "$default"
+
+  depends_on = [module.api_gateway_us]
 }
 
 resource "aws_route53_health_check" "api_seoul" {
