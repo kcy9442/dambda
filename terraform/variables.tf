@@ -65,6 +65,12 @@ variable "google_client_secret" {
   sensitive   = true
 }
 
+variable "environment" {
+  description = "Environment tag applied to all taggable AWS resources"
+  type        = string
+  default     = "dev"
+}
+
 variable "api_domain" {
   description = "Multi-region API hostname managed with Route 53 failover routing"
   type        = string

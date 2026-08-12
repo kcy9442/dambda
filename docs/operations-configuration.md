@@ -23,6 +23,19 @@ Set these in **Settings → Secrets and variables → Actions → Variables** be
 
 `ENABLE_MANAGED_GRAFANA` and `ENABLE_COST_CONTROLS` default to `false` so a deployment cannot accidentally create a workspace or send billing mail. Amazon Managed Prometheus defaults to enabled.
 
+## Cost allocation tags
+
+Terraform applies `Project=DAMBDA`, `Environment=dev`, `ManagedBy=Terraform`,
+`Repository=dambda`, and `CostCenter=DAMBDA` to every AWS resource type that
+supports tags in both regions. In AWS Billing, activate the `Project`,
+`Environment`, and `CostCenter` user-defined cost allocation tags before using
+them to group or filter costs in Cost Explorer. Tag activation and cost data
+can take up to 24 hours to appear. The monthly AWS Budget remains account-wide
+so untaggable shared AWS charges are not accidentally omitted.
+
 ## Important integration note
 
-The SQS queue and Step Functions workflow are provisioned, and the ECS task role has the permissions and environment variables needed to publish to them. The current review API intentionally continues its existing synchronous persistence flow until the backend route is migrated to asynchronous processing. This prevents a deployment of infrastructure alone from changing review behavior or losing reviews.
+The review API stores a pending review, publishes its moderation request to
+SQS, and EventBridge Pipes starts the Step Functions moderation workflow. Only
+reviews changed to `APPROVED` by the worker Lambda are returned in public review
+lists.
