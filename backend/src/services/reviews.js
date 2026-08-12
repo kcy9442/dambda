@@ -44,7 +44,7 @@ async function deleteReview(userId, productId) {
   );
 }
 
-async function queryReviewsByProduct(productId) {
+async function queryReviewsByProduct(productId, viewerUserId) {
   const items = [];
   let exclusiveStartKey;
   do {
@@ -62,7 +62,10 @@ async function queryReviewsByProduct(productId) {
   } while (exclusiveStartKey);
 
   return items
-    .filter((item) => item.moderationStatus === 'APPROVED' || !item.moderationStatus)
+    .filter((item) =>
+      item.moderationStatus === 'APPROVED' ||
+      !item.moderationStatus ||
+      (viewerUserId && item.userId === viewerUserId && item.moderationStatus === 'PENDING'))
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 

@@ -7,6 +7,7 @@ const s3 = require('../services/s3');
 const reviewQueue = require('../services/reviewQueue');
 const translate = require('../services/translate');
 const authenticate = require('../middleware/authenticate');
+const optionalAuthenticate = require('../middleware/optionalAuthenticate');
 const asyncHandler = require('../middleware/asyncHandler');
 
 const router = express.Router({ mergeParams: true });
@@ -62,13 +63,16 @@ function handleUpload(req, res, next) {
   });
 }
 
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', optionalAuthenticate, asyncHandler(async (req, res) => {
   res.set('Cache-Control', 'no-store');
-  const items = await reviews.queryReviewsByProduct(req.params.productId);
-  const reviewCount = items.length;
+  const items = await reviews.queryReviewsByProduct(req.params.productId, req.user?.sub);
+  const approvedItems = items.filter(
+    (item) => item.moderationStatus === 'APPROVED' || !item.moderationStatus,
+  );
+  const reviewCount = approvedItems.length;
   const averageRating = reviewCount === 0
     ? 0
-    : items.reduce((sum, r) => sum + r.rating, 0) / reviewCount;
+    : approvedItems.reduce((sum, r) => sum + r.rating, 0) / reviewCount;
 
   const lang = SUPPORTED_LANGS.includes(req.query.lang) ? req.query.lang : null;
   const translated = await Promise.all(items.map((item) => withTranslatedText(item, lang)));

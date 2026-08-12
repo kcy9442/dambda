@@ -19,10 +19,17 @@ class ReviewService {
     return Uri.parse('$base$normalizedPath');
   }
 
-  Future<ReviewsResult> list(String productId, {String? lang}) async {
+  Future<ReviewsResult> list(
+    String productId, {
+    String? lang,
+    String? token,
+  }) async {
     final uri = _uri('/products/$productId/reviews');
     final response = await http
-        .get(lang == null ? uri : uri.replace(queryParameters: {'lang': lang}))
+        .get(
+          lang == null ? uri : uri.replace(queryParameters: {'lang': lang}),
+          headers: token == null ? null : {'Authorization': 'Bearer $token'},
+        )
         .timeout(requestTimeout, onTimeout: timeoutError);
     if (response.statusCode != 200) {
       throw ApiException(response.statusCode, _errorMessage(response));

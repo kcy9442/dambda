@@ -111,8 +111,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (showLoading) setState(() => _loadingReviews = true);
     try {
       final lang = Localizations.localeOf(context).languageCode;
-      final result = await _reviewService.list(widget.productId, lang: lang);
-      if (mounted) setState(() => _result = result);
+      final result = await _reviewService.list(
+        widget.productId,
+        lang: lang,
+        token: authState.accessToken,
+      );
+      if (mounted) {
+        setState(() {
+          _result = result;
+          if (_pendingReview != null &&
+              result.reviews.any(
+                (review) =>
+                    review.userId == _pendingReview!.userId &&
+                    review.productId == _pendingReview!.productId,
+              )) {
+            _pendingReview = null;
+          }
+        });
+      }
     } catch (_) {
       // 조회 실패 시 목록은 비워둔 채로 두고 조용히 넘어감(로딩 인디케이터만 꺼짐)
     } finally {
@@ -126,7 +142,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       try {
         await _loadReviews(showLoading: false);
         final approved =
-            _result?.reviews.any((review) => review.userId == userId) ?? false;
+            _result?.reviews.any(
+              (review) =>
+                  review.userId == userId &&
+                  review.moderationStatus == 'APPROVED',
+            ) ??
+            false;
         if (approved) {
           if (mounted) {
             setState(() {
@@ -503,6 +524,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   _ReviewTile(
                     review: review,
                     isMine: myUserId != null && review.userId == myUserId,
+                    pending: review.moderationStatus == 'PENDING',
                     onEdit: () => _startEdit(review),
                     onDelete: () => _confirmDelete(review),
                   ),

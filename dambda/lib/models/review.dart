@@ -6,6 +6,7 @@ class Review {
   final String? photoUrl;
   final String authorNickname;
   final String createdAt;
+  final String? moderationStatus;
 
   const Review({
     required this.userId,
@@ -15,6 +16,7 @@ class Review {
     required this.photoUrl,
     required this.authorNickname,
     required this.createdAt,
+    this.moderationStatus,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class Review {
       photoUrl: json['photoUrl'] as String?,
       authorNickname: json['authorNickname'] as String,
       createdAt: json['createdAt'] as String,
+      moderationStatus: json['moderationStatus'] as String?,
     );
   }
 }
